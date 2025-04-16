@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hotel_management/screens/all_rooms.dart';
-import 'package:hotel_management/screens/settings.dart';
-// Ensure these exist and are exported correctly
-import 'room_detail_screen.dart';
-import 'rooms.dart';
+import 'package:hotel_management/screens/maintenance_staff_allotment.dart';
 
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
+        title: const Text("Settings"),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -23,37 +19,21 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: GridView.count(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: [
-          _buildDashboardCard(
-            context,
-            "Book a Room",
-            Icons.hotel,
-            UnoccupiedRoomsScreen(),
-          ),
-          _buildDashboardCard(
-            context,
-            "Booked Rooms",
-            Icons.assignment,
-            RoomDetailsScreen(),
-          ),
-          _buildDashboardCard(
-            context,
-            "All Rooms",
-            Icons.meeting_room,
-            AllRoomsScreen(),
-          ),
-          _buildDashboardCard(
-            context,
-            "Settings",
-            Icons.settings,
-            SettingsPage(),
-          ),
-        ],
+        child: GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: [
+            _buildDashboardCard(
+              context,
+              "Maintenance Staff Allotment",
+              Icons.engineering,
+              MaintenanceStaffAllotmentPage(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -82,6 +62,7 @@ class DashboardScreen extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 title,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

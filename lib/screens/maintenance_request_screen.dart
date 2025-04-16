@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
+import 'package:hotel_management/screens/add_maintenance_request_screen.dart';
+import 'package:hotel_management/screens/modify_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart'; // Import the intl package
+import 'package:intl/intl.dart';
 
 class MaintenanceRequestScreen extends StatefulWidget {
+  final String roomId;
   final String roomNumber;
   final String roomType;
   final String status;
 
   const MaintenanceRequestScreen({
     super.key,
+    required this.roomId,
     required this.roomNumber,
     required this.roomType,
     required this.status,
@@ -32,19 +36,36 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
 
   Future<List<Map<String, dynamic>>> _fetchMaintenanceRequests() async {
     final response = await http.get(
-      Uri.parse('$kBaseurl/api/maintenance-requests-with-staff/'),
+      Uri.parse(
+        '$kBaseurl/api/maintenance-requests-with-staff/?roomId=${widget.roomId}',
+      ),
     );
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
       return data.map((item) {
+        final assignment = item['maintenanceAssignment'];
+        String maintenanceType = item['typeName'] ?? "N/A";
+        String role = assignment?['maintenanceStaffRole'] ?? "N/A";
+
+        if (maintenanceType.toLowerCase().contains('plumb')) {
+          role = "Plumber";
+        } else if (maintenanceType.toLowerCase().contains('electric')) {
+          role = "Electrician";
+        } else if (maintenanceType.toLowerCase().contains('clean')) {
+          role = "Cleaner";
+        }
+
         return {
-          'maintenanceType': item['maintenanceAssignment']['maintenanceType'],
-          'priorityLevel': item['priorityLevel'],
-          'requestDate': item['requestDate'],
-          'assignedTo': item['maintenanceAssignment']['name'],
-          'status': item['status'],
           'requestId': item['requestId'],
+          'typeId': item['typeId'],
+          'maintenanceType': maintenanceType,
+          'maintenanceStaffRole': role,
+          'priorityLevel': item['priorityLevel'] ?? "N/A",
+          'requestDate': item['requestDate'] ?? "",
+          'assignedTo': assignment?['maintenanceStaffName'] ?? "Not Assigned",
+          'status': item['status'] ?? "N/A",
+          'issueDescription': item['issueDescription'] ?? "No Description",
         };
       }).toList();
     } else {
@@ -52,19 +73,89 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
     }
   }
 
-  // Function to format the date to a readable format
   String formatDate(String date) {
     DateTime parsedDate = DateTime.parse(date);
-    return DateFormat(
-      'dd MMM yyyy',
-    ).format(parsedDate); // Format date as "day month year"
+    return DateFormat('dd MMM yyyy').format(parsedDate);
   }
 
-  // Function to handle the "+" button click
   void _onAddMaintenanceRequest() {
-    // This function will be triggered when the "+" button is pressed
-    print("Add maintenance request button clicked!");
-    // Here you can navigate to another screen or show a dialog for adding a new request
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AddMaintenanceRequestScreen(
+              roomNumber: widget.roomNumber,
+              roomType: widget.roomType,
+              status: widget.status,
+              roomId: int.parse(widget.roomId),
+            ),
+      ),
+    ).then((_) {
+      setState(() {
+        _maintenanceRequests = _fetchMaintenanceRequests();
+      });
+    });
+  }
+
+  void _showIssueDescriptionBottomSheet(Map<String, dynamic> request) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  height: 5,
+                  width: 50,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const Text(
+                'Issue Description',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Text(
+                request['issueDescription'] ?? "No description provided",
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.5,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Close'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -126,6 +217,9 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                             String formattedDate = formatDate(
                               request['requestDate'],
                             );
+                            final int reqid = request['requestId'];
+                            final int typeid = request['typeId'];
+
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 8),
                               shape: RoundedRectangleBorder(
@@ -138,7 +232,7 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Maintenance Type: ${request['maintenanceType']}',
+                                      'Type: ${request['maintenanceType'].toUpperCase().replaceAll('_', ' ')}',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -146,20 +240,14 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                     ),
                                     Text(
                                       'Priority Level: ${request['priorityLevel']}',
-                                      style: const TextStyle(fontSize: 14),
                                     ),
                                     Text(
                                       'Assigned to: ${request['assignedTo']}',
-                                      style: const TextStyle(fontSize: 14),
                                     ),
-                                    Text(
-                                      'Request Date: $formattedDate',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
+                                    Text('Request Date: $formattedDate'),
                                     Text(
                                       'Status: ${request['status']}',
                                       style: TextStyle(
-                                        fontSize: 14,
                                         color:
                                             request['status'].toLowerCase() ==
                                                     'completed'
@@ -174,8 +262,9 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                       children: [
                                         ElevatedButton.icon(
                                           onPressed: () {
+                                            // Implement the "Edit" button logic here if required
                                             print(
-                                              'Edit button clicked for Request ID: ${request['requestId']}',
+                                              'Edit clicked for Request ID: $reqid',
                                             );
                                           },
                                           icon: const Icon(Icons.edit),
@@ -194,12 +283,26 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                         ),
                                         ElevatedButton.icon(
                                           onPressed: () {
-                                            print(
-                                              'Modify Assignment button clicked for Request ID: ${request['requestId']}',
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) =>
+                                                        ModifyReqScreen(
+                                                          reqid: reqid,
+                                                          typeid: typeid,
+                                                          roomId: widget.roomId,
+                                                          roomNumber:
+                                                              widget.roomNumber,
+                                                          roomType:
+                                                              widget.roomType,
+                                                          status: widget.status,
+                                                        ),
+                                              ),
                                             );
                                           },
                                           icon: const Icon(
-                                            Icons.assignment_ind,
+                                            Icons.assignment_ind_outlined,
                                           ),
                                           label: const Text("Modify"),
                                           style: ElevatedButton.styleFrom(
@@ -216,8 +319,8 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                         ),
                                         ElevatedButton.icon(
                                           onPressed: () {
-                                            print(
-                                              'View button clicked for Request ID: ${request['requestId']}',
+                                            _showIssueDescriptionBottomSheet(
+                                              request,
                                             );
                                           },
                                           icon: const Icon(Icons.visibility),
@@ -250,8 +353,7 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed:
-            _onAddMaintenanceRequest, // Trigger the add maintenance request function
+        onPressed: _onAddMaintenanceRequest,
         child: const Icon(Icons.add),
         backgroundColor: Colors.teal,
       ),

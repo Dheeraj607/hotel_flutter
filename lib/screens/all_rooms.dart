@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'maintenance_request_screen.dart'; // Import the new screen
+import 'maintenance_request_screen.dart'; // Import the maintenance screen
 
 class AllRoomsScreen extends StatefulWidget {
   const AllRoomsScreen({super.key});
@@ -47,26 +47,39 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
     }
   }
 
-  void handleMaintenance(String roomNumber, String roomType, String status) {
-    Navigator.push(
+  Future<void> handleMaintenance(
+    String roomId,
+    String roomNumber,
+    String roomType,
+    String status,
+  ) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder:
             (context) => MaintenanceRequestScreen(
+              roomId: roomId,
               roomNumber: roomNumber,
               roomType: roomType,
               status: status,
             ),
       ),
     );
+
+    // If maintenance request was successful, refresh room data
+    if (result == true) {
+      fetchRooms();
+    }
   }
 
   Widget buildRoomCard(Map<String, dynamic> room) {
+    final roomId = room['roomId']?.toString() ?? 'N/A';
     final roomNumber = room['roomNumber'] ?? 'N/A';
     final roomType = room['roomType'] ?? 'N/A';
     final status = room['status'] ?? 'N/A';
+    final isOccupied = status.toString().toLowerCase() == 'occupied';
 
-    final isOccupied = status.toLowerCase() == 'occupied';
+    final latestMaintenance = room['latestMaintenance']; // Optional key
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -96,11 +109,24 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (latestMaintenance != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              "Last Maintenance: $latestMaintenance",
+              style: const TextStyle(color: Colors.deepOrange),
+            ),
+          ],
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
-              onPressed: () => handleMaintenance(roomNumber, roomType, status),
+              onPressed:
+                  () => handleMaintenance(
+                    roomId,
+                    roomNumber.toString(),
+                    roomType.toString(),
+                    status.toString(),
+                  ),
               icon: const Icon(Icons.build, size: 18),
               label: const Text("Maintenance"),
               style: ElevatedButton.styleFrom(
