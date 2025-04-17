@@ -3,6 +3,8 @@ import 'package:hotel_management/constant.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'add_staff_roles.dart'; // Make sure this file exists
+
 class MaintenanceStaffAllotmentPage extends StatefulWidget {
   const MaintenanceStaffAllotmentPage({super.key});
 
@@ -23,7 +25,7 @@ class _MaintenanceStaffAllotmentPageState
     fetchMaintenanceTypes();
   }
 
-  // Fetch available maintenance types
+  // Fetch maintenance types from the API
   Future<void> fetchMaintenanceTypes() async {
     final url = Uri.parse('$kBaseurl/api/maintenance-types/');
     try {
@@ -41,7 +43,7 @@ class _MaintenanceStaffAllotmentPageState
     }
   }
 
-  // Fetch staff members for the selected maintenance type
+  // Fetch staff for the selected maintenance type
   Future<void> fetchStaffForType(int typeId) async {
     final url = Uri.parse('$kBaseurl/api/get-staffs/$typeId');
     try {
@@ -59,44 +61,43 @@ class _MaintenanceStaffAllotmentPageState
     }
   }
 
-  // Delete staff roles for a specific maintenance type
-  Future<void> deleteStaffRole(int typeId) async {
-    final url = Uri.parse('$kBaseurl/api/delete-staff-by-type/$typeId/');
+  // Delete a staff member by staffId
+  Future<void> deleteStaffById(int staffId) async {
+    final url = Uri.parse('$kBaseurl/api/delete-staff-by-type/$staffId/');
     try {
       final response = await http.delete(url);
       if (response.statusCode == 200) {
-        // Check for a successful deletion response
         final responseData = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(responseData['message'] ?? 'Deleted successfully'),
           ),
         );
-
-        // After deleting staff roles, update the staff list
         setState(() {
-          staffList = []; // Clear the staff list as roles have been deleted
+          staffList.removeWhere(
+            (staff) => staff['staffId'] == staffId,
+          ); // Remove deleted staff from list
         });
       } else {
-        throw Exception('Failed to delete staff roles');
+        throw Exception('Failed to delete staff member');
       }
     } catch (e) {
-      print("Error deleting staff roles: $e");
+      print("Error deleting staff: $e");
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error deleting staff roles: $e")));
+      ).showSnackBar(SnackBar(content: Text("Error deleting staff: $e")));
     }
   }
 
-  // Show confirmation dialog for staff deletion
-  void _confirmDelete(BuildContext context, int typeId) {
+  // Confirm deletion of a staff member
+  void _confirmDelete(BuildContext context, int staffId) {
     showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
             title: const Text("Confirm Delete"),
-            content: Text(
-              "Are you sure you want to delete all roles for this maintenance type?",
+            content: const Text(
+              "Are you sure you want to delete this staff member?",
             ),
             actions: [
               TextButton(
@@ -106,7 +107,9 @@ class _MaintenanceStaffAllotmentPageState
               TextButton(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
-                  await deleteStaffRole(typeId);
+                  await deleteStaffById(
+                    staffId,
+                  ); // Call deleteStaffById with staffId
                 },
                 child: const Text(
                   "Delete",
@@ -133,6 +136,25 @@ class _MaintenanceStaffAllotmentPageState
           ),
         ),
       ),
+      floatingActionButton:
+          selectedType != null
+              ? FloatingActionButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              AssignStaffPage(typeId: selectedType['typeId']),
+                    ),
+                  );
+                  if (result == true) {
+                    fetchStaffForType(selectedType['typeId']);
+                  }
+                },
+                child: const Icon(Icons.add),
+              )
+              : null,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -169,6 +191,7 @@ class _MaintenanceStaffAllotmentPageState
                           final staff = staffList[index];
                           final staffName = staff['name'];
                           final roleName = staff['roleName'];
+                          final staffId = staff['staffId'];
 
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 8),
@@ -193,8 +216,8 @@ class _MaintenanceStaffAllotmentPageState
                                 onPressed: () {
                                   _confirmDelete(
                                     context,
-                                    selectedType['typeId'], // Pass typeId here
-                                  );
+                                    staffId,
+                                  ); // Pass staffId to delete
                                 },
                               ),
                             ),
