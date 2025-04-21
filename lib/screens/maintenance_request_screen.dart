@@ -35,41 +35,45 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
   }
 
   Future<List<Map<String, dynamic>>> _fetchMaintenanceRequests() async {
-    final response = await http.get(
-      Uri.parse(
-        '$kBaseurl/api/maintenance-requests-with-staff/?roomId=${widget.roomId}',
-      ),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$kBaseurl/api/maintenance-requests-with-staff/?roomId=${widget.roomId}',
+        ),
+      );
 
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) {
-        final assignment = item['maintenanceAssignment'];
-        String maintenanceType = item['typeName'] ?? "N/A";
-        String role = assignment?['maintenanceStaffRole'] ?? "N/A";
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        return data.map((item) {
+          final assignment = item['maintenanceAssignment'];
+          String maintenanceType = item['typeName'] ?? "N/A";
+          String role = assignment?['maintenanceStaffRole'] ?? "N/A";
 
-        if (maintenanceType.toLowerCase().contains('plumb')) {
-          role = "Plumber";
-        } else if (maintenanceType.toLowerCase().contains('electric')) {
-          role = "Electrician";
-        } else if (maintenanceType.toLowerCase().contains('clean')) {
-          role = "Cleaner";
-        }
+          if (maintenanceType.toLowerCase().contains('plumb')) {
+            role = "Plumber";
+          } else if (maintenanceType.toLowerCase().contains('electric')) {
+            role = "Electrician";
+          } else if (maintenanceType.toLowerCase().contains('clean')) {
+            role = "Cleaner";
+          }
 
-        return {
-          'requestId': item['requestId'],
-          'typeId': item['typeId'],
-          'maintenanceType': maintenanceType,
-          'maintenanceStaffRole': role,
-          'priorityLevel': item['priorityLevel'] ?? "N/A",
-          'requestDate': item['requestDate'] ?? "",
-          'assignedTo': assignment?['maintenanceStaffName'] ?? "Not Assigned",
-          'status': item['status'] ?? "N/A",
-          'issueDescription': item['issueDescription'] ?? "No Description",
-        };
-      }).toList();
-    } else {
-      throw Exception('Failed to load maintenance requests');
+          return {
+            'requestId': item['requestId'],
+            'typeId': item['typeId'],
+            'maintenanceType': maintenanceType,
+            'maintenanceStaffRole': role,
+            'priorityLevel': item['priorityLevel'] ?? "N/A",
+            'requestDate': item['requestDate'] ?? "",
+            'assignedTo': assignment?['maintenanceStaffName'] ?? "Not Assigned",
+            'status': item['status'] ?? "N/A",
+            'issueDescription': item['issueDescription'] ?? "No Description",
+          };
+        }).toList();
+      } else {
+        throw Exception('Failed to load maintenance requests');
+      }
+    } catch (error) {
+      throw Exception('Error fetching data: $error');
     }
   }
 
@@ -88,6 +92,7 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
               roomType: widget.roomType,
               status: widget.status,
               roomId: int.parse(widget.roomId),
+              requestId: 0, // New requestId for adding a new request
             ),
       ),
     ).then((_) {
@@ -262,10 +267,31 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                       children: [
                                         ElevatedButton.icon(
                                           onPressed: () {
-                                            // Implement the "Edit" button logic here if required
-                                            print(
-                                              'Edit clicked for Request ID: $reqid',
-                                            );
+                                            // Navigate to AddMaintenanceRequestScreen with existing request data
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (
+                                                      context,
+                                                    ) => AddMaintenanceRequestScreen(
+                                                      roomNumber:
+                                                          widget.roomNumber,
+                                                      roomType: widget.roomType,
+                                                      status: widget.status,
+                                                      roomId: int.parse(
+                                                        widget.roomId,
+                                                      ),
+                                                      requestId:
+                                                          reqid, // Pass requestId to pre-fill the form
+                                                    ),
+                                              ),
+                                            ).then((_) {
+                                              setState(() {
+                                                _maintenanceRequests =
+                                                    _fetchMaintenanceRequests();
+                                              });
+                                            });
                                           },
                                           icon: const Icon(Icons.edit),
                                           label: const Text("Edit"),

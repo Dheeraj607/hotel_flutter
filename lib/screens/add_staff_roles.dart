@@ -25,43 +25,50 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
     fetchRoles();
   }
 
+  // Fetch roles for the dropdown
   Future<void> fetchRoles() async {
     final url = Uri.parse('$kBaseurl/api/maintenance-roles/');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         setState(() {
-          roles = json.decode(response.body);
+          roles = json.decode(response.body) ?? [];
+          print('Roles fetched: $roles');
         });
+      } else {
+        throw Exception('Failed to load roles');
       }
     } catch (e) {
       print("Error fetching roles: $e");
     }
   }
 
+  // Fetch staff who are not assigned to a specific role
   Future<void> fetchStaffNotInRole(int roleId) async {
-    final url = Uri.parse(
-      '$kBaseurl/api/get_staff_not_in_role/?roleId=$roleId',
-    );
+    final url = Uri.parse('$kBaseurl/api/get_staff_not_in_role/$roleId/');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         setState(() {
-          availableStaff = json.decode(response.body);
+          availableStaff = json.decode(response.body) ?? [];
+          print('Available staff fetched: $availableStaff');
           selectedStaff = null; // reset selected staff on role change
         });
+      } else {
+        throw Exception('Failed to load staff');
       }
     } catch (e) {
       print("Error fetching staff: $e");
     }
   }
 
+  // Assign the selected staff to the selected role
   Future<void> assignStaffToRole() async {
     if (selectedRole == null || selectedStaff == null) return;
 
     final url = Uri.parse('$kBaseurl/api/maintenance-staff/');
     final body = json.encode({
-      "staffId": selectedStaff['staff_id'],
+      "staffId": selectedStaff['staffId'],
       "roleId": selectedRole['roleId'],
     });
 
@@ -102,6 +109,7 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
                 labelText: 'Select Role',
                 border: OutlineInputBorder(),
               ),
+              value: selectedRole ?? (roles.isNotEmpty ? roles[0] : null),
               items:
                   roles.map<DropdownMenuItem<dynamic>>((role) {
                     return DropdownMenuItem(
@@ -112,31 +120,46 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
               onChanged: (value) {
                 setState(() {
                   selectedRole = value;
-                  availableStaff = [];
-                  selectedStaff = null;
+                  availableStaff = []; // Reset available staff list
+                  selectedStaff = null; // Reset selected staff
                 });
-                fetchStaffNotInRole(value['roleId']);
+                if (value != null) {
+                  fetchStaffNotInRole(value['roleId']);
+                }
               },
             ),
             const SizedBox(height: 20),
 
-            // Dropdown for selecting staff (now only shows staff name)
+            // Dropdown for selecting staff
             DropdownButtonFormField(
               decoration: const InputDecoration(
                 labelText: 'Select Staff',
                 border: OutlineInputBorder(),
               ),
-              value: selectedStaff,
+              value:
+                  selectedStaff ??
+                  (availableStaff.isNotEmpty ? availableStaff[0] : null),
               items:
-                  availableStaff.map<DropdownMenuItem<dynamic>>((staff) {
-                    return DropdownMenuItem(
-                      value: staff,
-                      child: Text(
-                        staff['staff_name'],
-                      ), // Only staff name shown here
-                    );
-                  }).toList(),
-              onChanged: (value) => setState(() => selectedStaff = value),
+                  availableStaff.isNotEmpty
+                      ? availableStaff.map<DropdownMenuItem<dynamic>>((staff) {
+                        return DropdownMenuItem(
+                          value: staff,
+                          child: Text(
+                            staff['staffName'],
+                          ), // Ensure staffName exists
+                        );
+                      }).toList()
+                      : [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('No staff available'),
+                        ),
+                      ],
+              onChanged: (value) {
+                setState(() {
+                  selectedStaff = value;
+                });
+              },
             ),
             const SizedBox(height: 30),
 

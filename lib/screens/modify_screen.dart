@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
-import 'package:hotel_management/screens/dashboard_screen.dart';
 import 'package:hotel_management/screens/maintenance_request_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 class ModifyReqScreen extends StatefulWidget {
   final int reqid;
@@ -32,17 +32,23 @@ class _ModifyReqScreenState extends State<ModifyReqScreen> {
   int? selectedStaffId;
   bool isLoading = false;
   late final TextEditingController commentController;
+  late final TextEditingController dateController;
+  final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
 
   @override
   void initState() {
     super.initState();
-    commentController = TextEditingController(); // Initialize controller
+    commentController = TextEditingController();
+    dateController = TextEditingController(
+      text: _dateFormat.format(DateTime.now()),
+    );
     fetchStaffs();
   }
 
   @override
   void dispose() {
-    commentController.dispose(); // Dispose controller
+    commentController.dispose();
+    dateController.dispose();
     super.dispose();
   }
 
@@ -77,6 +83,7 @@ class _ModifyReqScreenState extends State<ModifyReqScreen> {
       "requestId": widget.reqid,
       "staffId": selectedStaffId,
       "comments": commentController.text.trim(),
+      "assignedDate": dateController.text.trim(),
     });
 
     setState(() {
@@ -97,7 +104,6 @@ class _ModifyReqScreenState extends State<ModifyReqScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Assignment modified successfully')),
       );
-      // Navigate back to the MaintenanceRequestScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -126,50 +132,84 @@ class _ModifyReqScreenState extends State<ModifyReqScreen> {
         child:
             isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Select Staff", style: TextStyle(fontSize: 16)),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<int>(
-                      isExpanded: true,
-                      value: selectedStaffId,
-                      items:
-                          staffList.map((staff) {
-                            return DropdownMenuItem<int>(
-                              value: staff['maintenanceStaffId'],
-                              child: Text(staff['name']),
-                            );
-                          }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedStaffId = value;
-                        });
-                      },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                : SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Select Staff",
+                        style: TextStyle(fontSize: 16),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text("Comments", style: TextStyle(fontSize: 16)),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: commentController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: 'Enter comments',
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<int>(
+                        isExpanded: true,
+                        value: selectedStaffId,
+                        items:
+                            staffList.map((staff) {
+                              return DropdownMenuItem<int>(
+                                value: staff['maintenanceStaffId'],
+                                child: Text(staff['name']),
+                              );
+                            }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedStaffId = value;
+                          });
+                        },
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: modifyAssignment,
-                        child: const Text("Submit"),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Assigned Date",
+                        style: TextStyle(fontSize: 16),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: dateController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              dateController.text = _dateFormat.format(
+                                pickedDate,
+                              );
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      const Text("Comments", style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: commentController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: 'Enter comments',
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: modifyAssignment,
+                          child: const Text("Submit"),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
       ),
     );

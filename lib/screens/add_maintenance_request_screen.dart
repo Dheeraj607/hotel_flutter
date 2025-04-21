@@ -10,6 +10,7 @@ class AddMaintenanceRequestScreen extends StatefulWidget {
   final String roomNumber;
   final String roomType;
   final String status;
+  final int requestId;
 
   const AddMaintenanceRequestScreen({
     super.key,
@@ -17,6 +18,7 @@ class AddMaintenanceRequestScreen extends StatefulWidget {
     required this.roomNumber,
     required this.roomType,
     required this.status,
+    required this.requestId,
   });
 
   @override
@@ -27,30 +29,34 @@ class AddMaintenanceRequestScreen extends StatefulWidget {
 class _AddMaintenanceRequestScreenState
     extends State<AddMaintenanceRequestScreen> {
   List<Map<String, dynamic>> maintenanceTypes = [];
-  int? selectedTypeId;
+  int? selectedTypeId; // This will hold the selected maintenance type ID
   String issueDescription = '';
   String priorityLevel = 'Low';
   String status = 'Pending';
   DateTime selectedDate = DateTime.now();
+  bool isEditMode = false;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final String maintenanceTypeUrl = '$kBaseurl/api/maintenance-types/';
   final String requestApiUrl =
       '$kBaseurl/api/maintenance-request-with-assignment/';
+  final String requestDetailApiUrl =
+      '$kBaseurl/api/maintenance-request-details/'; // New endpoint to fetch request details
 
   @override
   void initState() {
     super.initState();
     fetchMaintenanceTypes();
-    print("Room ID: ${widget.roomId}");
+    if (widget.requestId != 0) {
+      isEditMode = true;
+      fetchRequestDetails(widget.requestId);
+    }
   }
 
+  // Fetch available maintenance types
   Future<void> fetchMaintenanceTypes() async {
     try {
       final response = await http.get(Uri.parse(maintenanceTypeUrl));
-      print('Fetching maintenance types from: $maintenanceTypeUrl');
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -64,9 +70,9 @@ class _AddMaintenanceRequestScreenState
                     },
                   )
                   .toList();
-          print('Available maintenance types: $maintenanceTypes');
           if (maintenanceTypes.isNotEmpty && selectedTypeId == null) {
-            selectedTypeId = maintenanceTypes[0]['typeId'];
+            selectedTypeId =
+                maintenanceTypes[0]['typeId']; // Default to first type
           }
         });
       } else {
@@ -77,6 +83,32 @@ class _AddMaintenanceRequestScreenState
     }
   }
 
+  // Fetch maintenance request details for editing
+  Future<void> fetchRequestDetails(int requestId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$requestDetailApiUrl$requestId'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        setState(() {
+          issueDescription = data['issueDescription'] ?? '';
+          priorityLevel = data['priorityLevel'] ?? 'Low';
+          status = data['status'] ?? 'Pending';
+          selectedDate = DateTime.parse(data['requestDate']);
+          selectedTypeId =
+              data['typeId']; // Set the selected type ID for editing
+        });
+      } else {
+        throw Exception('Failed to load maintenance request details');
+      }
+    } catch (e) {
+      print('Error fetching maintenance request details: $e');
+    }
+  }
+
+  // Pick a date for the maintenance request
   Future<void> _pickDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -91,7 +123,8 @@ class _AddMaintenanceRequestScreenState
     }
   }
 
-  Future<void> submitRequest(bool bl) async {
+  // Submit the maintenance request (either create or update)
+  Future<void> submitRequest(bool shouldPop) async {
     if (!_formKey.currentState!.validate() || selectedTypeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields')),
@@ -111,25 +144,27 @@ class _AddMaintenanceRequestScreenState
     };
 
     try {
-      print('Selected Type ID: $selectedTypeId');
-      print('Submitting to: $requestApiUrl');
-      print('Payload: ${json.encode(payload)}');
-
-      final response = await http.post(
-        Uri.parse(requestApiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(payload),
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      final response =
+          widget.requestId != 0
+              ? await http.put(
+                Uri.parse(
+                  '$kBaseurl/api/maintenance-requests/${widget.requestId}/',
+                ),
+                headers: {'Content-Type': 'application/json'},
+                body: json.encode(payload),
+              )
+              : await http.post(
+                Uri.parse(requestApiUrl),
+                headers: {'Content-Type': 'application/json'},
+                body: json.encode(payload),
+              );
 
       final resData = json.decode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(resData['message'] ?? 'Saved!')));
-        if (bl) {
+        if (shouldPop) {
           Navigator.pop(context);
         } else {
           Navigator.push(
@@ -139,10 +174,10 @@ class _AddMaintenanceRequestScreenState
                   (context) => ModifyReqScreen(
                     reqid: resData['maintenanceRequest']['requestId'],
                     typeid: selectedTypeId,
-                    roomId: widget.roomId.toString(), // Pass roomId as string
-                    roomNumber: widget.roomNumber, // Pass roomNumber
-                    roomType: widget.roomType, // Pass roomType
-                    status: status, // Pass status
+                    roomId: widget.roomId.toString(),
+                    roomNumber: widget.roomNumber,
+                    roomType: widget.roomType,
+                    status: status,
                   ),
             ),
           );
@@ -153,7 +188,6 @@ class _AddMaintenanceRequestScreenState
         );
       }
     } catch (e) {
-      print("Submission error: $e");
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -203,7 +237,7 @@ class _AddMaintenanceRequestScreenState
               maintenanceTypes.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : DropdownButtonFormField<int>(
-                    value: selectedTypeId,
+                    value: selectedTypeId, // This reflects the selected type ID
                     items:
                         maintenanceTypes
                             .map(
@@ -238,6 +272,7 @@ class _AddMaintenanceRequestScreenState
                   ),
               const SizedBox(height: 16),
               TextFormField(
+                initialValue: issueDescription,
                 decoration: const InputDecoration(
                   labelText: "Issue Description",
                   border: OutlineInputBorder(),
@@ -305,12 +340,8 @@ class _AddMaintenanceRequestScreenState
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.save),
-                      label: const Text("Save"),
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          submitRequest(true);
-                        }
-                      },
+                      label: Text(isEditMode ? "Update" : "Save"),
+                      onPressed: () => submitRequest(true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -325,12 +356,10 @@ class _AddMaintenanceRequestScreenState
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.save),
-                      label: const Text("Save and Assign"),
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          submitRequest(false);
-                        }
-                      },
+                      label: Text(
+                        isEditMode ? "Update and Assign" : "Save and Assign",
+                      ),
+                      onPressed: () => submitRequest(false),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         padding: const EdgeInsets.symmetric(vertical: 14),
