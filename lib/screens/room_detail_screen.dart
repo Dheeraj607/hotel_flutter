@@ -101,7 +101,7 @@ class RoomCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Room No: ${room['roomNumber']}",
+                  "Room No: ${room['roomNumber'] ?? 'N/A'}", // Added null check
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Container(
@@ -122,7 +122,7 @@ class RoomCard extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              "Room Type: ${room['roomType']}",
+              "Room Type: ${room['roomType'] ?? 'N/A'}", // Added null check
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 12),
@@ -160,7 +160,8 @@ class CustomerDetails extends StatelessWidget {
 
     Map<int, String> serviceMap = {
       for (var service in extraServices)
-        service['serviceId']: service['serviceName'],
+        service['serviceId']:
+            service['serviceName'] ?? 'N/A', // Added null check
     };
 
     List<Map<String, dynamic>> enrichedPayments =
@@ -230,10 +231,53 @@ class CustomerDetails extends StatelessWidget {
   }
 }
 
-class PaymentDetailsScreen extends StatelessWidget {
+class PaymentDetailsScreen extends StatefulWidget {
   final List<dynamic> paymentDetails;
 
   const PaymentDetailsScreen({super.key, required this.paymentDetails});
+
+  @override
+  _PaymentDetailsScreenState createState() => _PaymentDetailsScreenState();
+}
+
+class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
+  Map<int, String> serviceCategoryMap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategoryNames();
+  }
+
+  Future<void> _loadCategoryNames() async {
+    for (var payment in widget.paymentDetails) {
+      int serviceId = payment['serviceId'];
+      if (!serviceCategoryMap.containsKey(serviceId)) {
+        String categoryName = await _fetchCategoryName(serviceId);
+        setState(() {
+          serviceCategoryMap[serviceId] = categoryName;
+        });
+      }
+    }
+  }
+
+  Future<String> _fetchCategoryName(int serviceId) async {
+    try {
+      final url = Uri.parse("$kBaseurl/api/get-category-name/$serviceId/");
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['categoryName'] ?? 'No Category Name';
+      } else if (response.statusCode == 404) {
+        return 'Category not found';
+      } else {
+        return 'Failed to fetch category (Status: ${response.statusCode})';
+      }
+    } catch (e) {
+      return 'Error fetching category: $e';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -243,11 +287,12 @@ class PaymentDetailsScreen extends StatelessWidget {
         backgroundColor: Colors.teal,
       ),
       body: ListView.builder(
-        itemCount: paymentDetails.length,
+        itemCount: widget.paymentDetails.length,
         itemBuilder: (context, index) {
-          var payment = paymentDetails[index];
+          var payment = widget.paymentDetails[index];
           String formattedDate = _formatDate(payment['paymentDate']);
-          String serviceName = payment['serviceName'] ?? "N/A";
+          String serviceName =
+              serviceCategoryMap[payment['serviceId']] ?? "Loading...";
           String remarks =
               (payment['remarks'] != null &&
                       payment['remarks'].toString().toLowerCase() != 'null')
@@ -272,17 +317,17 @@ class PaymentDetailsScreen extends StatelessWidget {
                     _rowWithIcon(
                       Icons.attach_money,
                       "Amount",
-                      "\$${payment['amount']}",
+                      "\$${payment['amount'] ?? 'N/A'}",
                     ),
                     _rowWithIcon(
                       Icons.credit_card,
                       "Payment Method",
-                      payment['paymentMethod'],
+                      payment['paymentMethod'] ?? 'N/A',
                     ),
                     _rowWithIcon(
                       Icons.check_circle,
                       "Status",
-                      payment['paymentStatus'],
+                      payment['paymentStatus'] ?? 'N/A',
                     ),
                     _rowWithIcon(Icons.calendar_today, "Date", formattedDate),
                     _rowWithIcon(
@@ -335,25 +380,3 @@ class PaymentDetailsScreen extends StatelessWidget {
     }
   }
 }
-
-
-// class ExtraServiceScreen extends StatelessWidget {
-//   final int bookingId;
-
-//   const ExtraServiceScreen({super.key, required this.bookingId});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     debugPrint('Received Booking ID: $bookingId'); // Debugging line
-//     return Scaffold(
-//       appBar: AppBar(title: const Text("Extra Services")),
-//       body: Center(
-//         child: ElevatedButton(
-//           onPressed: () {},
-//           child: const Text("Add Extra Service"),
-//         ),
-//       ),
-//     );
-//   }
-// }
-

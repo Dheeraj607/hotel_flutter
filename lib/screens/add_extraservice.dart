@@ -3,21 +3,35 @@ import 'package:hotel_management/constant.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+// Model for Extra Service Category
+class ExtraServiceCategory {
+  final int categoryId;
+  final String categoryName;
+
+  ExtraServiceCategory({required this.categoryId, required this.categoryName});
+
+  factory ExtraServiceCategory.fromJson(Map<String, dynamic> json) {
+    return ExtraServiceCategory(
+      categoryId: json['categoryId'],
+      categoryName: json['categoryName'],
+    );
+  }
+}
+
 class AddExtraServiceScreen extends StatefulWidget {
   final int bookingId;
 
-  AddExtraServiceScreen({super.key, required this.bookingId}) {
-    print("Booking ID received in AddExtraServiceScreen: $bookingId");
-  }
+  const AddExtraServiceScreen({super.key, required this.bookingId});
 
   @override
-  _AddExtraServiceScreenState createState() => _AddExtraServiceScreenState();
+  State<AddExtraServiceScreen> createState() => _AddExtraServiceScreenState();
 }
 
 class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  String serviceName = '';
+  String serviceDetails = '';
+  int? selectedCategoryId;
   double serviceCost = 0.0;
   String? paymentMethod;
   String? paymentType;
@@ -26,6 +40,40 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
 
   List<String> paymentMethods = ['Credit Card', 'Cash', 'UPI', 'Online'];
   List<String> paymentTypes = ['Full Payment', 'Advance', 'Installment'];
+
+  List<ExtraServiceCategory> categoryList = [];
+  bool isLoadingCategories = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchServiceCategories();
+  }
+
+  Future<void> fetchServiceCategories() async {
+    final url = Uri.parse("$kBaseurl/api/extra-service-categories/");
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        setState(() {
+          categoryList =
+              data.map((item) => ExtraServiceCategory.fromJson(item)).toList();
+          isLoadingCategories = false;
+          if (categoryList.isNotEmpty && selectedCategoryId == null) {
+            selectedCategoryId = categoryList.first.categoryId;
+          }
+        });
+      } else {
+        throw Exception('Failed to load categories');
+      }
+    } catch (e) {
+      print("Error fetching categories: $e");
+      setState(() {
+        isLoadingCategories = false;
+      });
+    }
+  }
 
   Future<void> _selectPaymentDate(BuildContext context) async {
     DateTime? pickedDate = await showDatePicker(
@@ -45,11 +93,28 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
   Future<void> submitExtraService() async {
     if (!_formKey.currentState!.validate()) return;
 
+    print("Selected category ID before submit: $selectedCategoryId");
+
+    // Find the category name corresponding to the selected category ID
+    String categoryName =
+        categoryList
+            .firstWhere(
+              (category) => category.categoryId == selectedCategoryId,
+              orElse:
+                  () => ExtraServiceCategory(
+                    categoryId: 0,
+                    categoryName: 'Unknown',
+                  ),
+            )
+            .categoryName;
+
     final extraService = {
       "bookingId": widget.bookingId,
       "extraServices": [
         {
-          "serviceName": serviceName,
+          "categoryId": selectedCategoryId,
+          "categoryName": categoryName, // Include category name
+          "serviceDetails": serviceDetails,
           "serviceCost": serviceCost,
           "payment":
               isPaid
@@ -113,12 +178,33 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
           child: ListView(
             children: [
               TextFormField(
-                decoration: _inputDecoration("Service Name"),
+                decoration: _inputDecoration("Service Details"),
                 validator:
-                    (value) => value!.isEmpty ? "Enter service name" : null,
-                onChanged: (value) => setState(() => serviceName = value),
+                    (value) => value!.isEmpty ? "Enter service details" : null,
+                onChanged: (value) => setState(() => serviceDetails = value),
               ),
               const SizedBox(height: 16),
+
+              isLoadingCategories
+                  ? Center(child: CircularProgressIndicator())
+                  : DropdownButtonFormField<int>(
+                    decoration: _inputDecoration("Service Category"),
+                    value: selectedCategoryId,
+                    items:
+                        categoryList.map((category) {
+                          return DropdownMenuItem<int>(
+                            value: category.categoryId,
+                            child: Text(category.categoryName),
+                          );
+                        }).toList(),
+                    onChanged:
+                        (value) => setState(() => selectedCategoryId = value),
+                    validator:
+                        (value) =>
+                            value == null ? "Select a service category" : null,
+                  ),
+              const SizedBox(height: 16),
+
               TextFormField(
                 decoration: _inputDecoration("Service Cost"),
                 keyboardType: TextInputType.number,
@@ -135,12 +221,14 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
               SwitchListTile(
                 title: Text("Payment Done"),
                 activeColor: Colors.teal,
                 value: isPaid,
                 onChanged: (value) => setState(() => isPaid = value),
               ),
+
               if (isPaid) ...[
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -186,6 +274,7 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
                   onTap: () => _selectPaymentDate(context),
                 ),
               ],
+
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: submitExtraService,
