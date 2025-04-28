@@ -33,6 +33,7 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
   String serviceDetails = '';
   int? selectedCategoryId;
   double serviceCost = 0.0;
+  double paidAmount = 0.0;
   String? paymentMethod;
   String? paymentType;
   DateTime? paymentDate;
@@ -93,9 +94,6 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
   Future<void> submitExtraService() async {
     if (!_formKey.currentState!.validate()) return;
 
-    print("Selected category ID before submit: $selectedCategoryId");
-
-    // Find the category name corresponding to the selected category ID
     String categoryName =
         categoryList
             .firstWhere(
@@ -108,24 +106,34 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
             )
             .categoryName;
 
+    // Determine payment status
+    String paymentStatus = "Pending";
+    if (isPaid && paidAmount > 0) {
+      if (paidAmount >= serviceCost) {
+        paymentStatus = "Paid";
+      } else {
+        paymentStatus = "Partially Paid";
+      }
+    }
+
     final extraService = {
       "bookingId": widget.bookingId,
       "extraServices": [
         {
           "categoryId": selectedCategoryId,
-          "categoryName": categoryName, // Include category name
+          "categoryName": categoryName,
           "serviceDetails": serviceDetails,
           "serviceCost": serviceCost,
           "payment":
-              isPaid
-                  ? {
-                    "amount": serviceCost,
+              paymentStatus == "Pending"
+                  ? {"paymentStatus": "Pending"}
+                  : {
+                    "amount": paidAmount,
                     "paymentMethod": paymentMethod,
-                    "paymentStatus": "Paid",
+                    "paymentStatus": paymentStatus,
                     "paymentType": paymentType,
                     "paymentDate": paymentDate?.toIso8601String(),
-                  }
-                  : {"paymentStatus": "Pending"},
+                  },
         },
       ],
     };
@@ -230,6 +238,22 @@ class _AddExtraServiceScreenState extends State<AddExtraServiceScreen> {
               ),
 
               if (isPaid) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: _inputDecoration("Amount Paid"),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value!.isEmpty) return "Enter paid amount";
+                    if (double.tryParse(value) == null)
+                      return "Enter a valid number";
+                    return null;
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      paidAmount = double.tryParse(value) ?? 0.0;
+                    });
+                  },
+                ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   decoration: _inputDecoration("Payment Method"),

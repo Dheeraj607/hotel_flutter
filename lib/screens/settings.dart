@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/screens/maintenance_staff_allotment.dart';
+import 'package:hotel_management/screens/taxes_page.dart'; // Make sure to create this screen
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -30,7 +31,13 @@ class SettingsPage extends StatelessWidget {
               context,
               "Maintenance Staff Allotment",
               Icons.engineering,
-              MaintenanceStaffAllotmentPage(),
+              const MaintenanceStaffAllotmentPage(),
+            ),
+            _buildDashboardCard(
+              context,
+              "Taxes",
+              Icons.request_quote,
+              const TaxesPage(), // You should create this page
             ),
           ],
         ),

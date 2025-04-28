@@ -31,6 +31,7 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
       TextEditingController();
   final TextEditingController roomIdController = TextEditingController();
   final TextEditingController checkInDateController = TextEditingController();
+  final TextEditingController checkInTimeController = TextEditingController();
   final TextEditingController advanceController = TextEditingController();
   final TextEditingController rentController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
@@ -75,12 +76,27 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
     }
   }
 
+  Future<void> _selectCheckInTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        checkInTimeController.text = picked.format(context);
+      });
+    }
+  }
+
   Future<void> bookRoom() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
     final url = Uri.parse("$kBaseurl/api/book-room/");
+
+    // Prepare the request body
     final Map<String, dynamic> requestBody = {
       "customer_input": {
         "fullName": fullNameController.text.trim(),
@@ -94,6 +110,7 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
       "checkInDate": DateFormat(
         "yyyy-MM-dd",
       ).format(selectedCheckInDate ?? DateTime.now()),
+      "checkInTime": checkInTimeController.text.trim(),
       "Advance": double.tryParse(advanceController.text) ?? 0.0,
       "Rent": double.tryParse(rentController.text) ?? 0.0,
       "payment": {
@@ -105,12 +122,18 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
       },
     };
 
+    // Print request body for debugging
+    print("Request Body: ${jsonEncode(requestBody)}");
+
     try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(requestBody),
       );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         _showDialog("Success", "Room booked successfully!");
@@ -119,6 +142,7 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
         _showDialog("Error", "Failed to book the room.");
       }
     } catch (error) {
+      print('Error: $error');
       _showDialog("Network Error", "Could not connect to the server.");
     } finally {
       setState(() => isLoading = false);
@@ -134,6 +158,7 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
     specialRequestsController.clear();
     roomIdController.clear();
     checkInDateController.clear();
+    checkInTimeController.clear();
     advanceController.clear();
     rentController.clear();
     amountController.clear();
@@ -195,6 +220,12 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
                   onTap: () => _selectCheckInDate(context),
                   child: AbsorbPointer(
                     child: _buildCard(checkInDateController, "Check-In Date"),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _selectCheckInTime(context),
+                  child: AbsorbPointer(
+                    child: _buildCard(checkInTimeController, "Check-In Time"),
                   ),
                 ),
                 _buildCard(

@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:hotel_management/screens/add_extraservice.dart';
+import 'package:hotel_management/screens/updateextraservice.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class ExtraServiceScreen extends StatefulWidget {
+class ExtraServiceScreens extends StatefulWidget {
   final int bookingId;
 
-  const ExtraServiceScreen({super.key, required this.bookingId});
+  const ExtraServiceScreens({super.key, required this.bookingId});
 
   @override
-  State<ExtraServiceScreen> createState() => _ExtraServiceScreenState();
+  State<ExtraServiceScreens> createState() => _ExtraServiceScreenState();
 }
 
-class _ExtraServiceScreenState extends State<ExtraServiceScreen> {
+class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
   List<dynamic> extraServices = [];
   Map<int, String> serviceCategories = {};
   bool isLoading = true;
@@ -175,6 +176,29 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreen> {
               const SizedBox(height: 6),
               buildPaymentDetails(payments),
             ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.teal),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => UpdateExtraServiceScreen(
+                              serviceId: service['serviceId'],
+                              serviceCost: service['serviceCost'],
+                              bookingId: service['bookingId'],
+                            ),
+                      ),
+                    );
+                    fetchExtraServices(); // Refresh list after editing
+                  },
+                ),
+              ],
+            ),
           ],
         ),
       ),

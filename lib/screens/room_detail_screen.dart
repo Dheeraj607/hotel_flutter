@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:hotel_management/screens/extraservice_screen.dart';
+import 'package:hotel_management/screens/unpaidservice.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -26,16 +27,13 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   Future<void> fetchRoomDetails() async {
     try {
       final response = await http.get(Uri.parse('$kBaseurl/api/room_details/'));
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('API Response: $data');
 
-        // ✅ Filter only rooms that are occupied (i.e., have at least one booking)
+        // Filter rooms where status is "Occupied"
         List<dynamic> occupiedRooms =
             data.where((room) {
-              final bookings = room['bookings'];
-              return bookings != null && bookings.isNotEmpty;
+              return room['status'] != null && room['status'] == 'Occupied';
             }).toList();
 
         setState(() {
@@ -56,6 +54,13 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     }
   }
 
+  Future<void> handleRefresh() async {
+    setState(() {
+      isLoading = true;
+    });
+    await fetchRoomDetails();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,9 +75,16 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                   style: TextStyle(color: Colors.red, fontSize: 16),
                 ),
               )
-              : ListView.builder(
-                itemCount: rooms.length,
-                itemBuilder: (context, index) => RoomCard(room: rooms[index]),
+              : RefreshIndicator(
+                onRefresh: handleRefresh,
+                child: ListView.builder(
+                  itemCount: rooms.length,
+                  itemBuilder:
+                      (context, index) => RoomCard(
+                        room: rooms[index],
+                        onDataChanged: handleRefresh,
+                      ),
+                ),
               ),
     );
   }
@@ -80,13 +92,18 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
 class RoomCard extends StatelessWidget {
   final Map<String, dynamic> room;
+  final VoidCallback onDataChanged;
 
-  const RoomCard({super.key, required this.room});
+  const RoomCard({super.key, required this.room, required this.onDataChanged});
 
   @override
   Widget build(BuildContext context) {
     var bookings = room['bookings'] ?? [];
-    bool isOccupied = bookings.isNotEmpty;
+    bool isOccupied = room['status'] != null && room['status'] == 'Occupied';
+
+    // Parsing Rent and Advance to double
+    double Rent = double.tryParse(room['Rent'].toString()) ?? 0.0;
+    double Advance = double.tryParse(room['Advance'].toString()) ?? 0.0;
 
     return Card(
       elevation: 4,
@@ -101,7 +118,7 @@ class RoomCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Room No: ${room['roomNumber'] ?? 'N/A'}", // Added null check
+                  "Room No: ${room['roomNumber'] ?? 'N/A'}",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Container(
@@ -122,11 +139,44 @@ class RoomCard extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              "Room Type: ${room['roomType'] ?? 'N/A'}", // Added null check
+              "Room Type: ${room['roomType'] ?? 'N/A'}",
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 12),
-            if (isOccupied) CustomerDetails(bookings: bookings),
+            if (isOccupied)
+              CustomerDetails(bookings: bookings, onDataChanged: onDataChanged),
+            SizedBox(height: 12),
+            if (isOccupied)
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ExtraServicesScreen(
+                            bookingId: int.parse(
+                              bookings[0]['bookingId'].toString(),
+                            ),
+                            roomNo: room['roomNumber'].toString(),
+                            roomType: room['roomType'].toString(),
+                            checkinDate: bookings[0]['checkInDate'].toString(),
+                            checkinTime: bookings[0]['checkInTime'].toString(),
+                            Rent: Rent,
+                            Advance: Advance,
+                          ),
+                    ),
+                  );
+                  onDataChanged();
+                },
+                icon: Icon(Icons.exit_to_app),
+                label: Text("Checkout"),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -136,32 +186,27 @@ class RoomCard extends StatelessWidget {
 
 class CustomerDetails extends StatelessWidget {
   final List<dynamic> bookings;
+  final VoidCallback onDataChanged;
 
-  const CustomerDetails({super.key, required this.bookings});
+  const CustomerDetails({
+    super.key,
+    required this.bookings,
+    required this.onDataChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (bookings.isEmpty) {
-      debugPrint('No bookings found');
-      return Text("No bookings available.");
-    }
-
+    if (bookings.isEmpty) return Text("No bookings available.");
     var bookingData = bookings[0];
-    debugPrint('Booking Data: $bookingData');
-
     int? bookingId = bookingData['bookingId'];
-    if (bookingId == null) {
-      debugPrint('Booking ID is null');
-      return Text("Invalid booking data.");
-    }
+    if (bookingId == null) return Text("Invalid booking data.");
 
     List<dynamic> payments = bookingData['payment_details'] ?? [];
     List<dynamic> extraServices = bookingData['extra_services'] ?? [];
 
     Map<int, String> serviceMap = {
       for (var service in extraServices)
-        service['serviceId']:
-            service['serviceName'] ?? 'N/A', // Added null check
+        service['serviceId']: service['serviceName'] ?? 'N/A',
     };
 
     List<Map<String, dynamic>> enrichedPayments =
@@ -180,8 +225,8 @@ class CustomerDetails extends StatelessWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder:
@@ -190,6 +235,7 @@ class CustomerDetails extends StatelessWidget {
                           ),
                     ),
                   );
+                  onDataChanged();
                 },
                 icon: Icon(Icons.payment),
                 label: Text("Payment Details"),
@@ -204,15 +250,16 @@ class CustomerDetails extends StatelessWidget {
             SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  debugPrint('Passing Booking ID: $bookingId');
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder:
-                          (context) => ExtraServiceScreen(bookingId: bookingId),
+                          (context) =>
+                              ExtraServiceScreens(bookingId: bookingId),
                     ),
                   );
+                  onDataChanged();
                 },
                 icon: Icon(Icons.room_service),
                 label: Text("Extra Service"),
@@ -251,8 +298,8 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
 
   Future<void> _loadCategoryNames() async {
     for (var payment in widget.paymentDetails) {
-      int serviceId = payment['serviceId'];
-      if (!serviceCategoryMap.containsKey(serviceId)) {
+      int? serviceId = payment['serviceId'];
+      if (serviceId != null && !serviceCategoryMap.containsKey(serviceId)) {
         String categoryName = await _fetchCategoryName(serviceId);
         setState(() {
           serviceCategoryMap[serviceId] = categoryName;
@@ -265,17 +312,26 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     try {
       final url = Uri.parse("$kBaseurl/api/get-category-name/$serviceId/");
       final response = await http.get(url);
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['categoryName'] ?? 'No Category Name';
       } else if (response.statusCode == 404) {
         return 'Category not found';
       } else {
-        return 'Failed to fetch category (Status: ${response.statusCode})';
+        return 'Failed (Status: ${response.statusCode})';
       }
     } catch (e) {
-      return 'Error fetching category: $e';
+      return 'Error: $e';
+    }
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr == 'null') return "N/A";
+    try {
+      DateTime date = DateTime.parse(dateStr);
+      return DateFormat('yyyy-MM-dd – kk:mm').format(date);
+    } catch (_) {
+      return dateStr;
     }
   }
 
@@ -283,7 +339,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Payment Details"),
+        title: const Text("Payment Details"),
         backgroundColor: Colors.teal,
       ),
       body: ListView.builder(
@@ -291,13 +347,26 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
         itemBuilder: (context, index) {
           var payment = widget.paymentDetails[index];
           String formattedDate = _formatDate(payment['paymentDate']);
+          int? serviceId = payment['serviceId'];
+          int? inspectionId = payment['inspectionId'];
+          int? bookingId = payment['bookingId'];
+
           String serviceName =
-              serviceCategoryMap[payment['serviceId']] ?? "Loading...";
+              serviceId != null
+                  ? (serviceCategoryMap[serviceId] ?? "Loading...")
+                  : "N/A";
           String remarks =
               (payment['remarks'] != null &&
                       payment['remarks'].toString().toLowerCase() != 'null')
                   ? payment['remarks']
                   : "N/A";
+
+          String paymentRemarks =
+              (serviceId != null)
+                  ? "Extra Service Payment"
+                  : (inspectionId != null && bookingId != null)
+                  ? "Room Rent Payment"
+                  : "Check-in Advance Payment";
 
           return Padding(
             padding: const EdgeInsets.symmetric(
@@ -314,29 +383,24 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _sectionTitle("Payment Information"),
                     _rowWithIcon(
                       Icons.attach_money,
                       "Amount",
-                      "\$${payment['amount'] ?? 'N/A'}",
+                      "\$${payment['amount'].toString()}",
                     ),
                     _rowWithIcon(
-                      Icons.credit_card,
-                      "Payment Method",
-                      payment['paymentMethod'] ?? 'N/A',
+                      Icons.calendar_today,
+                      "Payment Date",
+                      formattedDate,
                     ),
+                    _rowWithIcon(Icons.category, "Service Name", serviceName),
+                    _rowWithIcon(Icons.comment, "Remarks", remarks),
                     _rowWithIcon(
-                      Icons.check_circle,
-                      "Status",
-                      payment['paymentStatus'] ?? 'N/A',
+                      Icons.info_outline,
+                      "Payment Remarks",
+                      paymentRemarks,
                     ),
-                    _rowWithIcon(Icons.calendar_today, "Date", formattedDate),
-                    _rowWithIcon(
-                      Icons.room_service,
-                      "Service Name",
-                      serviceName,
-                    ),
-                    if (payment['inspectionId'] != null)
-                      _rowWithIcon(Icons.notes, "Remarks", remarks),
                   ],
                 ),
               ),
@@ -347,36 +411,26 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     );
   }
 
-  Widget _rowWithIcon(IconData icon, String label, String value) {
+  Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.teal),
-          SizedBox(width: 8),
-          Text(
-            "$label: ",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(fontSize: 16),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  String _formatDate(String? date) {
-    if (date == null || date.isEmpty) return "N/A";
-    try {
-      DateTime parsedDate = DateTime.parse(date);
-      return DateFormat.yMMMMd().format(parsedDate);
-    } catch (e) {
-      return "Invalid Date";
-    }
+  Widget _rowWithIcon(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20),
+          SizedBox(width: 8),
+          Text("$label: $value"),
+        ],
+      ),
+    );
   }
 }
