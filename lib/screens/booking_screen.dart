@@ -134,12 +134,37 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
 
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
-
+      final responseData = jsonDecode(response.body);
       if (response.statusCode == 201) {
         _showDialog("Success", "Room booked successfully!");
         clearFields();
+        Navigator.pop(context);
+      } else if (responseData['customer_input'] != null &&
+          responseData['customer_input'].containsKey('emailAddress')) {
+        final errorMessage =
+            responseData['customer_input']['emailAddress']?.join(", ") ??
+            "Unknown error";
+        _showDialog("Error", errorMessage);
+      } else if (responseData['customer_input'] != null &&
+          responseData['customer_input'].containsKey('contactNumber')) {
+        final errorMessage =
+            responseData['customer_input']['contactNumber']?.join(", ") ??
+            "Unknown error";
+        _showDialog("Error", errorMessage);
+      } else if (responseData['customer_input'] != null &&
+          responseData['customer_input'].containsKey('idPassportNumber')) {
+        final errorMessage =
+            responseData['customer_input']['idPassportNumber']?.join(", ") ??
+            "Unknown error";
+        _showDialog("Error", errorMessage);
+      } else if (responseData['customer_input'] != null &&
+          responseData['customer_input'].containsKey('transactionId')) {
+        final errorMessage =
+            responseData['customer_input']['transactionId']?.join(", ") ??
+            "Unknown error";
+        _showDialog("Error", errorMessage);
       } else {
-        _showDialog("Error", "Failed to book the room.");
+        _showDialog("Error", "Network Error");
       }
     } catch (error) {
       print('Error: $error');
@@ -192,15 +217,16 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Book a Room"),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue, Colors.purple],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+        // flexibleSpace: Container(
+        //   decoration: const BoxDecoration(
+        //     gradient: LinearGradient(
+        //       colors: [Colors.blue, Colors.purple],
+        //       begin: Alignment.topLeft,
+        //       end: Alignment.bottomRight,
+        //     ),
+        //   ),
+        // ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -268,21 +294,21 @@ class _BookRoomScreenState extends State<BookRoomScreen> {
                         style: TextStyle(fontSize: 18, color: Colors.white),
                       ),
                     ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => RoomDetailsScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "View Room List",
-                    style: TextStyle(color: Colors.blue, fontSize: 16),
-                  ),
-                ),
+                // const SizedBox(height: 10),
+                // TextButton(
+                //   onPressed: () {
+                //     Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //         builder: (context) => RoomDetailsScreen(),
+                //       ),
+                //     );
+                //   },
+                //   child: const Text(
+                //     "View Room List",
+                //     style: TextStyle(color: Colors.blue, fontSize: 16),
+                //   ),
+                // ),
               ],
             ),
           ),

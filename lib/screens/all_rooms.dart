@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'maintenance_request_screen.dart'; // Import the maintenance screen
+import 'maintenance_request_screen.dart';
 
 class AllRoomsScreen extends StatefulWidget {
   const AllRoomsScreen({super.key});
@@ -24,7 +24,6 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
 
   Future<void> fetchRooms() async {
     final url = Uri.parse("$kBaseurl/api/rooms/");
-
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -66,7 +65,6 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
       ),
     );
 
-    // If maintenance request was successful, refresh room data
     if (result == true) {
       fetchRooms();
     }
@@ -77,64 +75,105 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
     final roomNumber = room['roomNumber'] ?? 'N/A';
     final roomType = room['roomType'] ?? 'N/A';
     final status = room['status'] ?? 'N/A';
+    final latestMaintenance = room['latestMaintenance'];
     final isOccupied = status.toString().toLowerCase() == 'occupied';
 
-    final latestMaintenance = room['latestMaintenance']; // Optional key
+    // Placeholder image URL (you can replace it with actual image asset or URL)
+    const String imageUrl =
+        "https://images.unsplash.com/flagged/photo-1556438758-8d49568ce18e?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1080&fit=max&ixid=eyJhcHBfaWQiOjEyMDd9";
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isOccupied ? Colors.red[50] : Colors.green[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isOccupied ? Colors.red : Colors.green,
-          width: 1,
-        ),
-      ),
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Room Number: $roomNumber",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text("Room Type: $roomType"),
-          const SizedBox(height: 4),
-          Text(
-            "Status: $status",
-            style: TextStyle(
-              color: isOccupied ? Colors.red : Colors.green,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (latestMaintenance != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              "Last Maintenance: $latestMaintenance",
-              style: const TextStyle(color: Colors.deepOrange),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed:
-                  () => handleMaintenance(
-                    roomId,
-                    roomNumber.toString(),
-                    roomType.toString(),
-                    status.toString(),
+          // Room Image
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              imageUrl,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder:
+                  (context, error, stackTrace) => Container(
+                    height: 180,
+                    color: Colors.grey.shade300,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image, size: 40),
                   ),
-              icon: const Icon(Icons.build, size: 18),
-              label: const Text("Maintenance"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+
+          // Room Details
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Room No: $roomNumber",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 6),
+                Text(
+                  "Room Type: $roomType",
+                  style: const TextStyle(fontSize: 16, color: Colors.black54),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Status: $status",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isOccupied ? Colors.red : Colors.green,
+                  ),
+                ),
+                if (latestMaintenance != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    "Last Maintenance: $latestMaintenance",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.deepOrange,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+
+                // Maintenance Button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        () => handleMaintenance(
+                          roomId,
+                          roomNumber.toString(),
+                          roomType.toString(),
+                          status.toString(),
+                        ),
+                    icon: const Icon(Icons.build, size: 20),
+                    label: const Text("Maintenance"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -147,7 +186,8 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("All Rooms"),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+        elevation: 0,
       ),
       body:
           isLoading

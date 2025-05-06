@@ -1,13 +1,11 @@
-import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:hotel_management/screens/add_extraservice.dart';
 import 'package:hotel_management/screens/payservicescreen.dart';
-import 'package:hotel_management/screens/room_detail_screen.dart'; // Import the CalculateRentScreen
 import 'package:hotel_management/screens/rent_details_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
 
 class ExtraServicesScreen extends StatefulWidget {
   final int bookingId;
@@ -65,7 +63,6 @@ class _ExtraServicesScreenState extends State<ExtraServicesScreen> {
         throw Exception("Failed to load categories");
       }
     } catch (e) {
-      print("Error fetching categories: $e");
       setState(() => isCategoriesLoading = false);
     }
   }
@@ -89,7 +86,6 @@ class _ExtraServicesScreenState extends State<ExtraServicesScreen> {
         throw Exception("Failed to load extra services");
       }
     } catch (e) {
-      print("Error fetching extra services: $e");
       setState(() => isLoading = false);
     }
   }
@@ -105,8 +101,7 @@ class _ExtraServicesScreenState extends State<ExtraServicesScreen> {
   String formatDate(String date) {
     try {
       final DateTime parsedDate = DateTime.parse(date);
-      final DateFormat dateFormat = DateFormat('dd/MM/yyyy');
-      return dateFormat.format(parsedDate);
+      return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
       return "Invalid Date";
     }
@@ -134,14 +129,14 @@ class _ExtraServicesScreenState extends State<ExtraServicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print(
-      "Check-in Time: ${widget.checkinTime}",
-    ); // Check if the value is correct
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Extra Services"),
-        backgroundColor: Colors.teal,
-        elevation: 0,
+        title: const Text(
+          "Extra Services",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -153,206 +148,182 @@ class _ExtraServicesScreenState extends State<ExtraServicesScreen> {
                       (_) => AddExtraServiceScreen(bookingId: widget.bookingId),
                 ),
               );
-              if (result == true) {
-                await _onRefresh();
-              }
+              if (result == true) await _onRefresh();
             },
           ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              const SizedBox(height: 20),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _onRefresh,
-                  child:
-                      isLoading || isCategoriesLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount:
-                                extraServices.isEmpty
-                                    ? 1
-                                    : extraServices
-                                        .length, // Handle empty list case
-                            itemBuilder: (context, index) {
-                              if (extraServices.isEmpty) {
-                                return Center(
-                                  child: Text("No extra services available"),
-                                );
-                              }
-                              final service = extraServices[index];
-                              final paymentDetails =
-                                  service['payment_details']?.isNotEmpty == true
-                                      ? service['payment_details'][0]
-                                      : null; // Check if payment_details is non-empty
-                              final paymentStatus = service['paymentStatus'];
-                              final serviceDetails = service['serviceDetails'];
-                              final serviceCost = service['serviceCost'];
-                              final categoryId = service['categoryId'];
-                              final categoryName = getCategoryName(categoryId);
+          const SizedBox(height: 10),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _onRefresh,
+              child:
+                  isLoading || isCategoriesLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : extraServices.isEmpty
+                      ? const Center(
+                        child: Text(
+                          "No extra services found.",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      )
+                      : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: extraServices.length,
+                        itemBuilder: (context, index) {
+                          final service = extraServices[index];
+                          final paymentDetails =
+                              service['payment_details']?.isNotEmpty == true
+                                  ? service['payment_details'][0]
+                                  : null;
+                          final paymentStatus = service['paymentStatus'];
+                          final serviceDetails = service['serviceDetails'];
+                          final serviceCost = service['serviceCost'];
+                          final categoryName = getCategoryName(
+                            service['categoryId'],
+                          );
 
-                              String paymentMethod = "";
-                              String paymentDate = "";
-                              String paymentInfo = "Status: $paymentStatus";
-                              Color paymentStatusColor =
-                                  paymentStatus == "Paid"
-                                      ? Colors.green
-                                      : Colors.red;
+                          String paymentMethod = "";
+                          String paymentDate = "";
+                          String paymentInfo = "Status: $paymentStatus";
+                          Color statusColor = Colors.red;
 
-                              if (paymentStatus == "Paid" &&
-                                  paymentDetails != null) {
-                                paymentMethod =
-                                    paymentDetails['paymentMethod'] ??
-                                    "Unknown";
-                                paymentDate =
-                                    paymentDetails['paymentDate'] ?? "Unknown";
-                                paymentDate = formatDate(paymentDate);
-                                paymentInfo =
-                                    "Status: Paid\nMethod: $paymentMethod\nDate: $paymentDate";
-                              } else if (paymentStatus == "Unpaid") {
-                                paymentInfo = "Status: Pending";
-                              }
+                          if (paymentStatus == "Paid" &&
+                              paymentDetails != null) {
+                            paymentMethod =
+                                paymentDetails['paymentMethod'] ?? "N/A";
+                            paymentDate = formatDate(
+                              paymentDetails['paymentDate'] ?? "",
+                            );
+                            paymentInfo =
+                                "Paid via $paymentMethod on $paymentDate";
+                            statusColor = Colors.green[700]!;
+                          } else {
+                            paymentInfo = "Pending Payment";
+                          }
 
-                              return Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 5,
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                          return Card(
+                            elevation: 5,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            margin: const EdgeInsets.symmetric(vertical: 10),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            categoryName,
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.teal,
-                                            ),
-                                          ),
-                                          if (paymentStatus == "Unpaid")
-                                            ElevatedButton.icon(
-                                              onPressed: () async {
-                                                final updatedService =
-                                                    await Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (context) =>
-                                                                PayServiceScreen(
-                                                                  service:
-                                                                      service,
-                                                                ),
-                                                      ),
-                                                    );
-                                                if (updatedService != null) {
-                                                  updatePaymentStatus(
-                                                    service['id'],
-                                                  );
-                                                }
-                                              },
-                                              icon: const Icon(Icons.payment),
-                                              label: const Text("Pay"),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.teal,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
                                       Text(
-                                        serviceDetails,
-                                        style: const TextStyle(fontSize: 16),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        "Cost: ₹$serviceCost",
-                                        style: const TextStyle(fontSize: 15),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        paymentInfo,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: paymentStatusColor,
+                                        categoryName,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.teal,
                                         ),
                                       ),
+                                      if (paymentStatus == "Unpaid")
+                                        ElevatedButton.icon(
+                                          icon: const Icon(Icons.payment),
+                                          label: const Text("Pay"),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.teal,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          onPressed: () async {
+                                            final result = await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (_) => PayServiceScreen(
+                                                      service: service,
+                                                    ),
+                                              ),
+                                            );
+                                            if (result != null)
+                                              updatePaymentStatus(
+                                                service['id'],
+                                              );
+                                          },
+                                        ),
                                     ],
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        areAllServicesPaid() || extraServices.isEmpty
-                            ? () {
-                              String roomNo = widget.roomNo;
-                              String roomType = widget.roomType;
-                              String checkinDate = widget.checkinDate;
-                              String checkinTime = widget.checkinTime;
-                              double Rent = widget.Rent;
-                              double Advance = widget.Advance;
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => CalculateRentScreen(
-                                        bookingId: widget.bookingId,
-                                        roomDetails: {
-                                          'roomNumber': roomNo,
-                                          'roomType': roomType,
-                                          'checkinDate': checkinDate,
-                                          'checkinTime': checkinTime,
-                                          'Rent': Rent,
-                                          'Advance': Advance,
-                                        },
-                                      ),
-                                ),
-                              );
-                            }
-                            : null,
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text("Confirm and Calculate Rent"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          (areAllServicesPaid() || extraServices.isEmpty)
-                              ? Colors.teal
-                              : Colors.grey,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(fontSize: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    serviceDetails,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Cost: ₹$serviceCost",
+                                    style: const TextStyle(fontSize: 15),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    paymentInfo,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text("Confirm and Calculate Rent"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      (areAllServicesPaid() || extraServices.isEmpty)
+                          ? Colors.teal
+                          : Colors.grey,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                onPressed:
+                    (areAllServicesPaid() || extraServices.isEmpty)
+                        ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => CalculateRentScreen(
+                                    bookingId: widget.bookingId,
+                                    roomDetails: {
+                                      'roomNumber': widget.roomNo,
+                                      'roomType': widget.roomType,
+                                      'checkinDate': widget.checkinDate,
+                                      'checkinTime': widget.checkinTime,
+                                      'Rent': widget.Rent,
+                                      'Advance': widget.Advance,
+                                    },
+                                  ),
+                            ),
+                          );
+                        }
+                        : null,
               ),
-            ],
+            ),
           ),
         ],
       ),

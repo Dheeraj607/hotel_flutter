@@ -61,9 +61,11 @@ class _MaintenanceStaffAllotmentPageState
     }
   }
 
-  // Delete a staff member by staffId
-  Future<void> deleteStaffById(int staffId) async {
-    final url = Uri.parse('$kBaseurl/api/delete-staff-by-type/$staffId/');
+  // Delete a staff-role assignment by staffId and roleId
+  Future<void> deleteStaffById(int staffId, int roleId) async {
+    final url = Uri.parse(
+      '$kBaseurl/api/delete-staff-from-role/$staffId/$roleId/',
+    );
     try {
       final response = await http.delete(url);
       if (response.statusCode == 200) {
@@ -75,29 +77,29 @@ class _MaintenanceStaffAllotmentPageState
         );
         setState(() {
           staffList.removeWhere(
-            (staff) => staff['staffId'] == staffId,
-          ); // Remove deleted staff from list
+            (staff) => staff['staffId'] == staffId && staff['roleId'] == roleId,
+          );
         });
       } else {
-        throw Exception('Failed to delete staff member');
+        throw Exception('Failed to delete staff-role mapping');
       }
     } catch (e) {
-      print("Error deleting staff: $e");
+      print("Error deleting staff-role: $e");
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error deleting staff: $e")));
+      ).showSnackBar(SnackBar(content: Text("Error deleting staff-role: $e")));
     }
   }
 
-  // Confirm deletion of a staff member
-  void _confirmDelete(BuildContext context, int staffId) {
+  // Confirm deletion of a staff-role assignment
+  void _confirmDelete(BuildContext context, int staffId, int roleId) {
     showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
             title: const Text("Confirm Delete"),
             content: const Text(
-              "Are you sure you want to delete this staff member?",
+              "Are you sure you want to delete this staff-role assignment?",
             ),
             actions: [
               TextButton(
@@ -107,9 +109,7 @@ class _MaintenanceStaffAllotmentPageState
               TextButton(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
-                  await deleteStaffById(
-                    staffId,
-                  ); // Call deleteStaffById with staffId
+                  await deleteStaffById(staffId, roleId); // Updated
                 },
                 child: const Text(
                   "Delete",
@@ -126,15 +126,7 @@ class _MaintenanceStaffAllotmentPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text("Maintenance Staff Allotment"),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue, Colors.purple],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
       ),
       floatingActionButton:
           selectedType != null
@@ -192,6 +184,7 @@ class _MaintenanceStaffAllotmentPageState
                           final staffName = staff['name'];
                           final roleName = staff['roleName'];
                           final staffId = staff['staffId'];
+                          final roleId = staff['roleId'];
 
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 8),
@@ -214,10 +207,7 @@ class _MaintenanceStaffAllotmentPageState
                                   color: Colors.red,
                                 ),
                                 onPressed: () {
-                                  _confirmDelete(
-                                    context,
-                                    staffId,
-                                  ); // Pass staffId to delete
+                                  _confirmDelete(context, staffId, roleId);
                                 },
                               ),
                             ),

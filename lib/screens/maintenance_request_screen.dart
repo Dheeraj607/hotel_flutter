@@ -27,6 +27,8 @@ class MaintenanceRequestScreen extends StatefulWidget {
 
 class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
   late Future<List<Map<String, dynamic>>> _maintenanceRequests;
+  int maintenanceStaffId = 0;
+  String maintenanceType = "";
 
   @override
   void initState() {
@@ -56,6 +58,13 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
           } else if (maintenanceType.toLowerCase().contains('clean')) {
             role = "Cleaner";
           }
+          if (assignment != null) {
+            print(assignment["maintenanceStaffId"]);
+            setState(() {
+              maintenanceStaffId = assignment["maintenanceStaffId"];
+              maintenanceType = assignment["maintenanceType"];
+            });
+          }
 
           return {
             'requestId': item['requestId'],
@@ -73,6 +82,7 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
         throw Exception('Failed to load maintenance requests');
       }
     } catch (error) {
+      print("Error fetching data: $error");
       throw Exception('Error fetching data: $error');
     }
   }
@@ -171,7 +181,7 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Maintenance Request"),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
         elevation: 0,
       ),
       body: Padding(
@@ -216,6 +226,7 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                     );
                   } else {
                     final requests = snapshot.data!;
+
                     return Column(
                       children:
                           requests.map((request) {
@@ -226,33 +237,40 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                             final int typeid = request['typeId'];
 
                             return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              margin: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                              elevation: 3,
+                              elevation: 5,
                               child: Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(20),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Type: ${request['maintenanceType'].toUpperCase().replaceAll('_', ' ')}',
+                                      'Type: ${request['maintenanceType'].toUpperCase()}',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    const SizedBox(height: 10),
                                     Text(
-                                      'Priority Level: ${request['priorityLevel']}',
+                                      'Priority: ${request['priorityLevel']}',
+                                      style: const TextStyle(fontSize: 14),
                                     ),
                                     Text(
                                       'Assigned to: ${request['assignedTo']}',
+                                      style: const TextStyle(fontSize: 14),
                                     ),
-                                    Text('Request Date: $formattedDate'),
+                                    Text(
+                                      'Request Date: $formattedDate',
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
                                     Text(
                                       'Status: ${request['status']}',
                                       style: TextStyle(
+                                        fontSize: 14,
                                         color:
                                             request['status'].toLowerCase() ==
                                                     'completed'
@@ -260,14 +278,13 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                                 : Colors.red,
                                       ),
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 15),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         ElevatedButton.icon(
                                           onPressed: () {
-                                            // Navigate to AddMaintenanceRequestScreen with existing request data
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
@@ -282,8 +299,11 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                                       roomId: int.parse(
                                                         widget.roomId,
                                                       ),
-                                                      requestId:
-                                                          reqid, // Pass requestId to pre-fill the form
+                                                      requestId: reqid,
+                                                      maintenanceStaffId:
+                                                          maintenanceStaffId,
+                                                      maintenanceType:
+                                                          "${request['maintenanceType'].toUpperCase()}",
                                                     ),
                                               ),
                                             ).then((_) {
@@ -298,12 +318,12 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.orange,
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 8,
+                                              horizontal: 15,
+                                              vertical: 12,
                                             ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(12),
                                             ),
                                           ),
                                         ),
@@ -334,12 +354,12 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.blue,
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 8,
+                                              horizontal: 15,
+                                              vertical: 12,
                                             ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(12),
                                             ),
                                           ),
                                         ),
@@ -354,12 +374,12 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.green,
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 8,
+                                              horizontal: 15,
+                                              vertical: 12,
                                             ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(12),
                                             ),
                                           ),
                                         ),

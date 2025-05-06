@@ -25,6 +25,14 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
     fetchRoles();
   }
 
+  void refreshData() {
+    setState(() {
+      selectedRole = null;
+      selectedStaff = null;
+      fetchRoles(); // Re-fetch roles
+    });
+  }
+
   // Fetch roles for the dropdown
   Future<void> fetchRoles() async {
     final url = Uri.parse('$kBaseurl/api/maintenance-roles/');
@@ -33,7 +41,7 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
       if (response.statusCode == 200) {
         setState(() {
           roles = json.decode(response.body) ?? [];
-          print('Roles fetched: $roles');
+          // print('Roles fetched: $roles');
         });
       } else {
         throw Exception('Failed to load roles');
@@ -98,7 +106,17 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Assign Staff to Role")),
+      appBar: AppBar(
+        title: const Text("Assign Staff to Role"),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: refreshData,
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -109,7 +127,8 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
                 labelText: 'Select Role',
                 border: OutlineInputBorder(),
               ),
-              value: selectedRole ?? (roles.isNotEmpty ? roles[0] : null),
+              value: selectedRole,
+              hint: const Text("No role selected"),
               items:
                   roles.map<DropdownMenuItem<dynamic>>((role) {
                     return DropdownMenuItem(
@@ -120,14 +139,15 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
               onChanged: (value) {
                 setState(() {
                   selectedRole = value;
-                  availableStaff = []; // Reset available staff list
-                  selectedStaff = null; // Reset selected staff
+                  availableStaff = [];
+                  selectedStaff = null;
                 });
                 if (value != null) {
                   fetchStaffNotInRole(value['roleId']);
                 }
               },
             ),
+
             const SizedBox(height: 20),
 
             // Dropdown for selecting staff

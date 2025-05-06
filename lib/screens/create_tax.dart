@@ -81,7 +81,10 @@ class _CreateTaxPageState extends State<CreateTaxPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Tax')),
+      appBar: AppBar(
+        title: const Text('Create Tax'),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+      ),
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())

@@ -1,96 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/screens/all_rooms.dart';
 import 'package:hotel_management/screens/settings.dart';
-// Ensure these exist and are exported correctly
 import 'room_detail_screen.dart';
 import 'rooms.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+
+  // List of screen widgets for each tab
+  final List<Widget> _screens = [
+    UnoccupiedRoomsScreen(), // Book a Room
+    RoomDetailsScreen(), // Booked Rooms
+    AllRoomsScreen(), // All Rooms
+    SettingsPage(), // Settings
+  ];
+
+  // App bar titles corresponding to each screen
+  final List<String> _titles = [
+    "Book a Room",
+    "Booked Rooms",
+    "All Rooms",
+    "Settings",
+  ];
+
+  // Handle bottom navigation tap
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dashboard"),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue, Colors.purple],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.hotel),
+            label: 'Book a Room',
           ),
-        ),
-      ),
-      body: GridView.count(
-        padding: const EdgeInsets.all(16),
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: [
-          _buildDashboardCard(
-            context,
-            "Book a Room",
-            Icons.hotel,
-            UnoccupiedRoomsScreen(),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Booked Rooms',
           ),
-          _buildDashboardCard(
-            context,
-            "Booked Rooms",
-            Icons.assignment,
-            RoomDetailsScreen(),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.meeting_room),
+            label: 'All Rooms',
           ),
-          _buildDashboardCard(
-            context,
-            "All Rooms",
-            Icons.meeting_room,
-            AllRoomsScreen(),
-          ),
-          _buildDashboardCard(
-            context,
-            "Settings",
-            Icons.settings,
-            SettingsPage(),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildDashboardCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Widget targetScreen,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => targetScreen),
-        );
-      },
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 48, color: Colors.blueAccent),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+Widget _buildDashboardCard(
+  BuildContext context,
+  String title,
+  IconData icon,
+  Widget targetScreen,
+) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
+    },
+    child: Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: Colors.blueAccent),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }

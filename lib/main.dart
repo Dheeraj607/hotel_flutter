@@ -15,7 +15,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const DashboardScreen(), // Make sure DashboardScreen is marked const
+      home:
+          const DashboardScreen(), // Make sure DashboardScreen is marked const
     );
   }
 }

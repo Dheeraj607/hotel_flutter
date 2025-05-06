@@ -87,7 +87,11 @@ class _TaxesPageState extends State<TaxesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Taxes')),
+      appBar: AppBar(
+        title: Text('Taxes'),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+      ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: onCreate, // Trigger navigation to CreateTaxPage
         icon: const Icon(Icons.add),

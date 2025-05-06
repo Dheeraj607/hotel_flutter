@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:hotel_management/screens/extraservice_screen.dart';
@@ -64,7 +65,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Room Details')),
+      appBar: AppBar(
+        title: Text('Room Details'),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+      ),
       body:
           isLoading
               ? Center(child: CircularProgressIndicator())
@@ -105,79 +109,150 @@ class RoomCard extends StatelessWidget {
     double Rent = double.tryParse(room['Rent'].toString()) ?? 0.0;
     double Advance = double.tryParse(room['Advance'].toString()) ?? 0.0;
 
+    // Image URL or placeholder
+    String imageUrl =
+        room['imageUrl']?.toString() ??
+        'https://images.unsplash.com/flagged/photo-1556438758-8d49568ce18e?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1080&fit=max&ixid=eyJhcHBfaWQiOjEyMDd9';
+
     return Card(
-      elevation: 4,
+      elevation: 6,
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Room No: ${room['roomNumber'] ?? 'N/A'}",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isOccupied ? Colors.redAccent : Colors.green,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    isOccupied ? "Occupied" : "Available",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shadowColor: Colors.black.withOpacity(0.1),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.teal.shade200,
+                const Color.fromARGB(255, 240, 244, 243),
               ],
             ),
-            SizedBox(height: 8),
-            Text(
-              "Room Type: ${room['roomType'] ?? 'N/A'}",
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 12),
-            if (isOccupied)
-              CustomerDetails(bookings: bookings, onDataChanged: onDataChanged),
-            SizedBox(height: 12),
-            if (isOccupied)
-              ElevatedButton.icon(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => ExtraServicesScreen(
-                            bookingId: int.parse(
-                              bookings[0]['bookingId'].toString(),
-                            ),
-                            roomNo: room['roomNumber'].toString(),
-                            roomType: room['roomType'].toString(),
-                            checkinDate: bookings[0]['checkInDate'].toString(),
-                            checkinTime: bookings[0]['checkInTime'].toString(),
-                            Rent: Rent,
-                            Advance: Advance,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Room Image
+              ClipRRect(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                child: Image.network(
+                  imageUrl,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder:
+                      (context, error, stackTrace) => Container(
+                        height: 200,
+                        color: Colors.grey.shade300,
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey.shade600,
+                            size: 50,
                           ),
-                    ),
-                  );
-                  onDataChanged();
-                },
-                icon: Icon(Icons.exit_to_app),
-                label: Text("Checkout"),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                        ),
+                      ),
                 ),
               ),
-          ],
+              // Room Details
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Room No: ${room['roomNumber'] ?? 'N/A'}",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isOccupied ? Colors.redAccent : Colors.green,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            isOccupied ? "Occupied" : "Available",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Room Type: ${room['roomType'] ?? 'N/A'}",
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                    SizedBox(height: 12),
+                    if (isOccupied)
+                      CustomerDetails(
+                        bookings: bookings,
+                        onDataChanged: onDataChanged,
+                      ),
+                    SizedBox(height: 12),
+                    if (isOccupied)
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => ExtraServicesScreen(
+                                    bookingId: int.parse(
+                                      bookings[0]['bookingId'].toString(),
+                                    ),
+                                    roomNo: room['roomNumber'].toString(),
+                                    roomType: room['roomType'].toString(),
+                                    checkinDate:
+                                        bookings[0]['checkInDate'].toString(),
+                                    checkinTime:
+                                        bookings[0]['checkInTime'].toString(),
+                                    Rent: Rent,
+                                    Advance: Advance,
+                                  ),
+                            ),
+                          );
+                          onDataChanged();
+                        },
+                        icon: Icon(Icons.exit_to_app),
+                        label: Text("Checkout"),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: const Color.fromARGB(
+                            255,
+                            39,
+                            55,
+                            112,
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20,
+                          ),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -240,9 +315,11 @@ class CustomerDetails extends StatelessWidget {
                 icon: Icon(Icons.payment),
                 label: Text("Payment Details"),
                 style: ElevatedButton.styleFrom(
+                  foregroundColor: const Color.fromARGB(255, 39, 55, 112),
                   padding: EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -264,9 +341,11 @@ class CustomerDetails extends StatelessWidget {
                 icon: Icon(Icons.room_service),
                 label: Text("Extra Service"),
                 style: ElevatedButton.styleFrom(
+                  foregroundColor: const Color.fromARGB(255, 39, 55, 112),
                   padding: EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -314,11 +393,11 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['categoryName'] ?? 'No Category Name';
+        return data['categoryName'] ?? 'No Category';
       } else if (response.statusCode == 404) {
         return 'Category not found';
       } else {
-        return 'Failed (Status: ${response.statusCode})';
+        return 'Error (${response.statusCode})';
       }
     } catch (e) {
       return 'Error: $e';
@@ -329,107 +408,178 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
     if (dateStr == null || dateStr == 'null') return "N/A";
     try {
       DateTime date = DateTime.parse(dateStr);
-      return DateFormat('yyyy-MM-dd – kk:mm').format(date);
+      return DateFormat('yyyy-MM-dd • hh:mm a').format(date);
     } catch (_) {
       return dateStr;
     }
   }
 
+  Widget _buildPaymentTypeChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Color _getTagColor(String type) {
+    switch (type) {
+      case 'Extra Service Payment':
+        return Colors.purple;
+      case 'Room Rent Payment':
+        return Colors.teal;
+      case 'Check-in Advance Payment':
+        return Colors.deepOrange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Future<void> _refreshData() async {
+    await _loadCategoryNames();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Payment Details"),
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.teal.shade600,
+        foregroundColor: Colors.white,
+        elevation: 4,
       ),
-      body: ListView.builder(
-        itemCount: widget.paymentDetails.length,
-        itemBuilder: (context, index) {
-          var payment = widget.paymentDetails[index];
-          String formattedDate = _formatDate(payment['paymentDate']);
-          int? serviceId = payment['serviceId'];
-          int? inspectionId = payment['inspectionId'];
-          int? bookingId = payment['bookingId'];
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: ListView.builder(
+          itemCount: widget.paymentDetails.length,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          itemBuilder: (context, index) {
+            var payment = widget.paymentDetails[index];
+            String formattedDate = _formatDate(payment['paymentDate']);
+            int? serviceId = payment['serviceId'];
+            int? inspectionId = payment['inspectionId'];
+            int? bookingId = payment['bookingId'];
 
-          String serviceName =
-              serviceId != null
-                  ? (serviceCategoryMap[serviceId] ?? "Loading...")
-                  : "N/A";
-          String remarks =
-              (payment['remarks'] != null &&
-                      payment['remarks'].toString().toLowerCase() != 'null')
-                  ? payment['remarks']
-                  : "N/A";
+            String serviceName =
+                serviceId != null
+                    ? (serviceCategoryMap[serviceId] ?? "Loading...")
+                    : "N/A";
 
-          String paymentRemarks =
-              (serviceId != null)
-                  ? "Extra Service Payment"
-                  : (inspectionId != null && bookingId != null)
-                  ? "Room Rent Payment"
-                  : "Check-in Advance Payment";
+            String paymentRemarks =
+                (serviceId != null)
+                    ? "Extra Service Payment"
+                    : (inspectionId != null && bookingId != null)
+                    ? "Room Rent Payment"
+                    : "Check-in Advance Payment";
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12.0,
-              vertical: 6.0,
-            ),
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+            Color chipColor = _getTagColor(paymentRemarks);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionTitle("Payment Information"),
-                    _rowWithIcon(
-                      Icons.attach_money,
-                      "Amount",
-                      "\$${payment['amount'].toString()}",
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.white, Colors.grey.shade200],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    _rowWithIcon(
-                      Icons.calendar_today,
-                      "Payment Date",
-                      formattedDate,
+                    child: Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top Row: Amount and Tag
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "₹ ${payment['amount'].toString()}",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal.shade800,
+                                ),
+                              ),
+                              _buildPaymentTypeChip(paymentRemarks, chipColor),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Divider(color: Colors.grey.shade300),
+                          const SizedBox(height: 10),
+
+                          // Payment Date
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                formattedDate,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Service Name
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.miscellaneous_services_outlined,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "Service: $serviceName",
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    _rowWithIcon(Icons.category, "Service Name", serviceName),
-                    _rowWithIcon(Icons.comment, "Remarks", remarks),
-                    _rowWithIcon(
-                      Icons.info_outline,
-                      "Payment Remarks",
-                      paymentRemarks,
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _rowWithIcon(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 20),
-          SizedBox(width: 8),
-          Text("$label: $value"),
-        ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -308,7 +308,7 @@ class _CheckoutConfirmationPageState extends State<CheckoutConfirmationPage> {
           backgroundColor: Colors.teal,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
-        child: const Text('Ok'),
+        child: const Text('Cancel'),
       ),
     );
   }

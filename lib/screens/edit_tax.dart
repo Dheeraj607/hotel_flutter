@@ -76,7 +76,10 @@ class _EditTaxPageState extends State<EditTaxPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Tax')),
+      appBar: AppBar(
+        title: const Text('Edit Tax Details'),
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Card(
@@ -90,10 +93,10 @@ class _EditTaxPageState extends State<EditTaxPage> {
               key: _formKey,
               child: ListView(
                 children: [
-                  Text(
-                    'Edit Tax Details',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  // Text(
+                  //   'Edit Tax Details',
+                  //   style: Theme.of(context).textTheme.titleLarge,
+                  // ),
                   const SizedBox(height: 20),
                   if (!isRent)
                     Column(

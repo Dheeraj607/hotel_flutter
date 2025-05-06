@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
-import 'package:hotel_management/screens/extraservice_screen.dart'; // Adjust the import path as needed
 import 'package:hotel_management/screens/extraservice_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -24,9 +23,9 @@ class UpdateExtraServiceScreen extends StatefulWidget {
 class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _paymentMethodController =
-      TextEditingController();
   final TextEditingController _transactionIdController =
+      TextEditingController();
+  final TextEditingController _paymentMethodController =
       TextEditingController();
   final TextEditingController _paymentTypeController = TextEditingController();
   final TextEditingController _paymentDateController = TextEditingController();
@@ -39,7 +38,7 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
   String? selectedPaymentType;
   DateTime? selectedPaymentDate;
 
-  final List<String> paymentMethods = ["Credit card", "Cash", "UPI", "Online"];
+  final List<String> paymentMethods = ["Credit Card", "Cash", "UPI", "Online"];
   final List<String> paymentTypes = ["Full Payment", "Advance", "Installment"];
 
   @override
@@ -63,7 +62,10 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
       "paymentMethod": selectedPaymentMethod,
       "transactionId": _transactionIdController.text,
       "paymentType": selectedPaymentType,
-      "paymentDate": _paymentDateController.text,
+      "paymentDate":
+          selectedPaymentDate != null
+              ? "${selectedPaymentDate!.toIso8601String().split('T')[0]}T00:00:00"
+              : null,
     };
 
     try {
@@ -88,7 +90,7 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
         );
       } else {
         setState(() {
-          errorMessage = "Error: ${response.body}";
+          errorMessage = "Error ${response.statusCode}: ${response.body}";
         });
       }
     } catch (e) {
@@ -112,7 +114,8 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
     if (pickedDate != null) {
       setState(() {
         selectedPaymentDate = pickedDate;
-        _paymentDateController.text = "${pickedDate.toLocal()}".split(' ')[0];
+        _paymentDateController.text =
+            "${pickedDate.year.toString().padLeft(4, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
       });
     }
   }
@@ -122,7 +125,7 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Update Payment"),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -135,7 +138,21 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(labelText: "Amount (₹)"),
+                  decoration: const InputDecoration(
+                    labelText: "Amount (₹)",
+                    filled: true,
+                    fillColor: Colors.white,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                  ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -153,9 +170,7 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                     });
                   },
                   items:
-                      paymentMethods.map<DropdownMenuItem<String>>((
-                        String value,
-                      ) {
+                      paymentMethods.map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
@@ -163,6 +178,18 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                       }).toList(),
                   decoration: const InputDecoration(
                     labelText: "Payment Method",
+                    filled: true,
+                    fillColor: Colors.white,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null) {
@@ -176,6 +203,18 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                   controller: _transactionIdController,
                   decoration: const InputDecoration(
                     labelText: "Transaction ID",
+                    filled: true,
+                    fillColor: Colors.white,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -193,15 +232,27 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                     });
                   },
                   items:
-                      paymentTypes.map<DropdownMenuItem<String>>((
-                        String value,
-                      ) {
+                      paymentTypes.map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
                         );
                       }).toList(),
-                  decoration: const InputDecoration(labelText: "Payment Type"),
+                  decoration: const InputDecoration(
+                    labelText: "Payment Type",
+                    filled: true,
+                    fillColor: Colors.white,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                  ),
                   validator: (value) {
                     if (value == null) {
                       return "Please select a payment type";
@@ -215,8 +266,20 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                   decoration: const InputDecoration(
                     labelText: "Payment Date",
                     suffixIcon: Icon(Icons.calendar_today),
+                    filled: true,
+                    fillColor: Colors.white,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
                   ),
-                  keyboardType: TextInputType.datetime,
+                  readOnly: true,
                   onTap: pickDate,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -250,10 +313,18 @@ class _UpdatePaymentScreenState extends State<UpdateExtraServiceScreen> {
                       onPressed: updatePayment,
                       child: const Text("Update Payment"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          84,
+                          207,
+                          187,
+                        ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 40,
                           vertical: 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),

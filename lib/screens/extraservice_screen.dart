@@ -31,13 +31,11 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
       isLoading = true;
       error = null;
     });
-
     await Future.wait([fetchServiceCategories(), fetchExtraServices()]);
   }
 
   Future<void> fetchServiceCategories() async {
     final url = Uri.parse("$kBaseurl/api/extra-service-categories/");
-
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -47,8 +45,6 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
             for (var item in data) item['categoryId']: item['categoryName'],
           };
         });
-      } else {
-        print("Failed to fetch categories: ${response.statusCode}");
       }
     } catch (e) {
       print("Error fetching categories: $e");
@@ -59,34 +55,23 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
     final url = Uri.parse(
       "$kBaseurl/api/extra_services/?bookingId=${widget.bookingId}",
     );
-
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        print("Raw Extra Services Data:");
-        print(data);
-
         setState(() {
           extraServices = data;
-          error = null;
-          isLoading = false;
-        });
-      } else if (response.statusCode == 204 || response.statusCode == 404) {
-        setState(() {
-          extraServices = [];
-          error = null;
           isLoading = false;
         });
       } else {
         setState(() {
-          error = "Failed to fetch services (Status: ${response.statusCode})";
+          extraServices = [];
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        error = "Error occurred: $e";
+        error = "Error: $e";
         isLoading = false;
       });
     }
@@ -96,8 +81,8 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
     if (dateStr == null || dateStr.isEmpty) return "N/A";
     try {
       final parsed = DateTime.parse(dateStr);
-      return "${parsed.day}-${parsed.month}-${parsed.year}";
-    } catch (e) {
+      return "${parsed.day.toString().padLeft(2, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.year}";
+    } catch (_) {
       return "Invalid Date";
     }
   }
@@ -107,25 +92,28 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children:
           payments.map((payment) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.payment, size: 18, color: Colors.blueGrey),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "₹${payment['amount']} - ${payment['paymentMethod']}",
-                        ),
-                        Text("Status: ${payment['paymentStatus']}"),
-                        Text("Date: ${_formatDate(payment['paymentDate'])}"),
-                      ],
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: Colors.teal[50],
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              child: ListTile(
+                leading: Icon(Icons.payments, color: Colors.teal[700]),
+                title: Text(
+                  "₹${payment['amount']} - ${payment['paymentMethod']}",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Status: ${payment['paymentStatus']}",
+                      style: TextStyle(color: Colors.teal[800]),
                     ),
-                  ),
-                ],
+                    Text("Date: ${_formatDate(payment['paymentDate'])}"),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -135,53 +123,64 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
   Widget buildServiceCard(Map<String, dynamic> service) {
     final List<dynamic> payments = service['payment_details'] ?? [];
     final int? categoryId = service['categoryId'];
-    final String categoryName = serviceCategories[categoryId] ?? 'Loading...';
+    final String categoryName = serviceCategories[categoryId] ?? 'Unknown';
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      color: Colors.white,
+      shadowColor: Colors.black12,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              service['serviceDetails'] ?? 'Unnamed Service',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.category, size: 18, color: Colors.teal),
-                const SizedBox(width: 4),
+                const Icon(Icons.room_service, color: Colors.teal),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    service['serviceDetails'] ?? 'Unnamed Service',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.category, color: Colors.orange),
+                const SizedBox(width: 6),
                 Text("Category: $categoryName"),
               ],
             ),
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.attach_money, size: 18, color: Colors.teal),
-                const SizedBox(width: 4),
+                const Icon(Icons.monetization_on, color: Colors.green),
+                const SizedBox(width: 6),
                 Text("Cost: ₹${service['serviceCost'] ?? 'N/A'}"),
               ],
             ),
             if (payments.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Divider(thickness: 1),
+              const Divider(),
               const Text(
-                "Payments:",
+                "Payments",
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 6),
               buildPaymentDetails(payments),
             ],
-            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.teal),
+                TextButton.icon(
                   onPressed: () async {
                     await Navigator.push(
                       context,
@@ -194,8 +193,13 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
                             ),
                       ),
                     );
-                    fetchExtraServices(); // Refresh list after editing
+                    fetchExtraServices();
                   },
+                  icon: const Icon(Icons.edit, color: Colors.teal),
+                  label: const Text(
+                    "Edit",
+                    style: TextStyle(color: Colors.teal),
+                  ),
                 ),
               ],
             ),
@@ -210,7 +214,7 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Extra Services"),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color.fromARGB(255, 245, 129, 86),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -218,30 +222,35 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child:
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : error != null
-                ? Center(
-                  child: Text(
-                    error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                )
-                : extraServices.isEmpty
-                ? const Center(child: Text("No extra services found."))
-                : ListView.builder(
-                  itemCount: extraServices.length,
-                  itemBuilder:
-                      (context, index) =>
-                          buildServiceCard(extraServices[index]),
-                ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : error != null
+              ? Center(
+                child: Text(error!, style: const TextStyle(color: Colors.red)),
+              )
+              : extraServices.isEmpty
+              ? const Center(child: Text("No extra services found."))
+              : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: extraServices.length,
+                itemBuilder:
+                    (context, index) => buildServiceCard(extraServices[index]),
+              ),
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.all(16),
         child: ElevatedButton.icon(
+          icon: const Icon(Icons.add),
+          label: const Text("Add Extra Service"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.teal,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           onPressed: () async {
             await Navigator.push(
               context,
@@ -251,20 +260,8 @@ class _ExtraServiceScreenState extends State<ExtraServiceScreens> {
                         AddExtraServiceScreen(bookingId: widget.bookingId),
               ),
             );
-            fetchExtraServices(); // Refresh list
+            fetchExtraServices();
           },
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            "Add Extra Service",
-            style: TextStyle(color: Colors.white),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
         ),
       ),
     );

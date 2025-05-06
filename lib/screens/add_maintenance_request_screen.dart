@@ -11,7 +11,8 @@ class AddMaintenanceRequestScreen extends StatefulWidget {
   final String roomType;
   final String status;
   final int requestId;
-
+  final int? maintenanceStaffId;
+  final String? maintenanceType;
   const AddMaintenanceRequestScreen({
     super.key,
     required this.roomId,
@@ -19,6 +20,8 @@ class AddMaintenanceRequestScreen extends StatefulWidget {
     required this.roomType,
     required this.status,
     required this.requestId,
+    this.maintenanceStaffId,
+    this.maintenanceType,
   });
 
   @override
@@ -124,7 +127,7 @@ class _AddMaintenanceRequestScreenState
   }
 
   // Submit the maintenance request (either create or update)
-  Future<void> submitRequest(bool shouldPop) async {
+  Future<void> submitRequest(bool shouldPop, bool isEdit) async {
     if (!_formKey.currentState!.validate() || selectedTypeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields')),
@@ -138,14 +141,14 @@ class _AddMaintenanceRequestScreenState
       "priorityLevel": priorityLevel,
       "status": status,
       "requestDate": DateFormat('yyyy-MM-dd').format(selectedDate),
-      "maintenanceStaffId": null,
+      "maintenanceStaffId": widget.maintenanceStaffId,
       "comments": "",
       "typeId": selectedTypeId,
     };
 
     try {
       final response =
-          widget.requestId != 0
+          isEdit
               ? await http.put(
                 Uri.parse(
                   '$kBaseurl/api/maintenance-requests/${widget.requestId}/',
@@ -229,12 +232,22 @@ class _AddMaintenanceRequestScreenState
                 style: TextStyle(fontSize: 18, color: statusColor),
               ),
               const SizedBox(height: 24),
-              const Text(
-                "Select Maintenance Type:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-              ),
+              isEditMode
+                  ? Text(
+                    "Maintenance Type:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  )
+                  : const Text(
+                    "Select Maintenance Type:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
               const SizedBox(height: 8),
-              maintenanceTypes.isEmpty
+              isEditMode
+                  ? Text(
+                    widget.maintenanceType ?? "",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  )
+                  : maintenanceTypes.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : DropdownButtonFormField<int>(
                     value: selectedTypeId, // This reflects the selected type ID
@@ -341,7 +354,7 @@ class _AddMaintenanceRequestScreenState
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.save),
                       label: Text(isEditMode ? "Update" : "Save"),
-                      onPressed: () => submitRequest(true),
+                      onPressed: () => submitRequest(true, isEditMode),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -351,23 +364,27 @@ class _AddMaintenanceRequestScreenState
                 ],
               ),
               const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: Text(
-                        isEditMode ? "Update and Assign" : "Save and Assign",
+              isEditMode
+                  ? SizedBox()
+                  : Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.save),
+                          label: Text(
+                            isEditMode
+                                ? "Update and Assign"
+                                : "Save and Assign",
+                          ),
+                          onPressed: () => submitRequest(false, isEditMode),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
                       ),
-                      onPressed: () => submitRequest(false),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
             ],
           ),
         ),

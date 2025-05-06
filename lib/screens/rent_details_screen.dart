@@ -63,7 +63,10 @@ class _CalculateRentScreenState extends State<CalculateRentScreen> {
     totalDaysStayedController.text = '1';
     advancePaid = widget.roomDetails['Advance']?.toDouble() ?? 0.0;
     advancePaidController.text = advancePaid.toString();
-
+    String checkinDateStr = widget.roomDetails['checkinDate'] ?? '';
+    if (checkinDateStr.isNotEmpty) {
+      checkinDate = DateTime.parse(checkinDateStr);
+    }
     print('roomDetails: ${widget.roomDetails}');
     String checkinTimeStr = widget.roomDetails['checkinTime'] ?? '';
     if (checkinTimeStr.isNotEmpty) {
