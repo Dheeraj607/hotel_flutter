@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'add_staff_roles.dart'; // Make sure this file exists
 
 class MaintenanceStaffAllotmentPage extends StatefulWidget {
@@ -40,6 +39,7 @@ class _MaintenanceStaffAllotmentPageState
       }
     } catch (e) {
       print("Error fetching types: $e");
+      showErrorDialog("Failed to load maintenance types. Please try again.");
     }
   }
 
@@ -58,6 +58,7 @@ class _MaintenanceStaffAllotmentPageState
       }
     } catch (e) {
       print("Error fetching staff: $e");
+      showErrorDialog("Failed to load staff for this maintenance type.");
     }
   }
 
@@ -115,6 +116,26 @@ class _MaintenanceStaffAllotmentPageState
                   "Delete",
                   style: TextStyle(color: Colors.red),
                 ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Show error dialog
+  void showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text("Error"),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text("OK"),
               ),
             ],
           ),
@@ -186,21 +207,60 @@ class _MaintenanceStaffAllotmentPageState
                           final staffId = staff['staffId'];
                           final roleId = staff['roleId'];
 
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 2,
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
                             ),
                             child: ListTile(
-                              leading: const Icon(Icons.person),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              leading: CircleAvatar(
+                                radius: 30,
+                                backgroundImage: AssetImage(
+                                  'images/staff1.jpg', // Updated image path
+                                ),
+                                backgroundColor: Colors.grey[200],
+                              ),
+
                               title: Text(
                                 staffName,
                                 style: const TextStyle(
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
                               ),
-                              subtitle: Text("Role: $roleName"),
+                              subtitle: Container(
+                                margin: const EdgeInsets.only(top: 5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5E8D5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  "Role: $roleName",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color.fromARGB(255, 104, 64, 4),
+                                  ),
+                                ),
+                              ),
                               trailing: IconButton(
                                 icon: const Icon(
                                   Icons.delete,

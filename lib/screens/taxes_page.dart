@@ -59,15 +59,11 @@ class _TaxesPageState extends State<TaxesPage> {
   }
 
   void onCreate() async {
-    // Navigate to the CreateTaxPage when Create Tax button is pressed
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const CreateTaxPage(), // CreateTaxPage navigation
-      ),
+      MaterialPageRoute(builder: (context) => const CreateTaxPage()),
     );
 
-    // If result is true (indicating success), refresh the tax data
     if (result == true) {
       fetchData(); // Refresh the tax list after creating a new tax
     }
@@ -88,12 +84,11 @@ class _TaxesPageState extends State<TaxesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Taxes'),
+        title: const Text('Taxes'),
         backgroundColor: const Color.fromARGB(255, 245, 129, 86),
       ),
-
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: onCreate, // Trigger navigation to CreateTaxPage
+        onPressed: onCreate,
         icon: const Icon(Icons.add),
         label: const Text('Create Tax'),
         backgroundColor: Colors.blue,
@@ -122,6 +117,7 @@ class _TaxesPageState extends State<TaxesPage> {
                       ),
                       elevation: 4,
                       margin: const EdgeInsets.symmetric(vertical: 10),
+                      color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -134,35 +130,54 @@ class _TaxesPageState extends State<TaxesPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Only display type if it's not "Extra Service"
-                                  if (!isExtraService && tax['type'] != null)
+                                  Row(
+                                    children: [
+                                      // Rent or Extra Service Icon
+                                      Icon(
+                                        isRent
+                                            ? Icons.home
+                                            : Icons.local_dining,
+                                        color:
+                                            isRent
+                                                ? Colors.green
+                                                : Colors.orange,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      // Type Title (Rent or Extra Service)
+                                      Text(
+                                        tax['type'] ?? 'Unknown',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Display Category for non-Rent Types
+                                  if (!isRent)
                                     Text(
-                                      tax['type'],
+                                      categoryName,
                                       style: const TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  const SizedBox(height: 4),
-                                  // Display category if it's not "Rent"
-                                  if (!isRent) ...[
-                                    Text(
-                                      ' $categoryName',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight:
-                                            FontWeight.bold, // Category in bold
+                                  const SizedBox(height: 8),
+                                  // GST Information (State and Central)
+                                  Row(
+                                    children: [
+                                      _buildGSTBox(
+                                        'State GST',
+                                        tax['stateGST'],
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                  ],
-                                  // Display State GST and Central GST for all types
-                                  Text(
-                                    'State GST: ${tax['stateGST']}%, Central GST: ${tax['centralGST']}%',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[700],
-                                    ),
+                                      const SizedBox(width: 16),
+                                      _buildGSTBox(
+                                        'Central GST',
+                                        tax['centralGST'],
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -178,6 +193,32 @@ class _TaxesPageState extends State<TaxesPage> {
                   },
                 ),
               ),
+    );
+  }
+
+  Widget _buildGSTBox(String label, dynamic value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            '${value ?? 0}%',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.blue.shade700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

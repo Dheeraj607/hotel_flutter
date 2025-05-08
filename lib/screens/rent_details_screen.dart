@@ -63,47 +63,47 @@ class _CalculateRentScreenState extends State<CalculateRentScreen> {
     totalDaysStayedController.text = '1';
     advancePaid = widget.roomDetails['Advance']?.toDouble() ?? 0.0;
     advancePaidController.text = advancePaid.toString();
+
+    // Parse check-in date
     String checkinDateStr = widget.roomDetails['checkinDate'] ?? '';
     if (checkinDateStr.isNotEmpty) {
       checkinDate = DateTime.parse(checkinDateStr);
+    } else {
+      checkinDate = DateTime.now(); // Fallback to current date if empty
     }
-    print('roomDetails: ${widget.roomDetails}');
+
+    // Parse check-in time
     String checkinTimeStr = widget.roomDetails['checkinTime'] ?? '';
+    print('Raw checkinTime from roomDetails: $checkinTimeStr'); // Debug log
+
     if (checkinTimeStr.isNotEmpty) {
       try {
         final parsedTime = DateFormat('hh:mm a').parse(checkinTimeStr);
         formattedCheckinTime = DateFormat('hh:mm a').format(parsedTime);
         print('Parsed checkinTime: $formattedCheckinTime');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          checkoutTimeController.text = formattedCheckinTime;
-          print(
-            'Autofilled checkoutTimeController with: $formattedCheckinTime',
-          );
-        });
       } catch (e) {
         print('Error parsing check-in time: $e');
+        // Fallback to current time or a default time
         formattedCheckinTime = DateFormat('hh:mm a').format(DateTime.now());
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          checkoutTimeController.text = formattedCheckinTime;
-          print(
-            'Autofilled checkoutTimeController with fallback: $formattedCheckinTime',
-          );
-        });
+        print('Fallback checkinTime: $formattedCheckinTime');
       }
     } else {
+      // Fallback for empty check-in time
       formattedCheckinTime = DateFormat('hh:mm a').format(DateTime.now());
-      print('checkinTime is empty, using current time: $formattedCheckinTime');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        checkoutTimeController.text = formattedCheckinTime;
-        print(
-          'Autofilled checkoutTimeController with default: $formattedCheckinTime',
-        );
-      });
+      print('Empty checkinTime, using fallback: $formattedCheckinTime');
     }
-    // Store formattedCheckinTime in state
+
+    // Autofill checkoutTimeController with formattedCheckinTime
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkoutTimeController.text = formattedCheckinTime;
+      print('Autofilled checkoutTimeController with: $formattedCheckinTime');
+    });
+
+    // Update state with formattedCheckinTime
     setState(() {
       this.formattedCheckinTime = formattedCheckinTime;
     });
+
     calculateTotalRent();
     calculateFinalAmount();
   }
@@ -139,8 +139,11 @@ class _CalculateRentScreenState extends State<CalculateRentScreen> {
   }
 
   void calculateTotalDaysStayed() {
-    if (checkoutDate.isAfter(checkinDate)) {
-      final difference = checkoutDate.difference(checkinDate).inDays;
+    if (checkoutDate.isAfter(checkinDate) ||
+        checkoutDate.isAtSameMomentAs(checkinDate)) {
+      final difference =
+          checkoutDate.difference(checkinDate).inDays +
+          1; // Include check-in day
       totalDaysStayedController.text = difference.toString();
       calculateTotalRent();
     }
@@ -170,11 +173,9 @@ class _CalculateRentScreenState extends State<CalculateRentScreen> {
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           final data = jsonDecode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Payment Recorded! ID: ${data['paymentId']}'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Payment Recorded!')));
 
           Navigator.push(
             context,
@@ -237,9 +238,9 @@ class _CalculateRentScreenState extends State<CalculateRentScreen> {
     String roomNumber = widget.roomDetails['roomNumber'] ?? 'N/A';
     String roomType = widget.roomDetails['roomType'] ?? 'N/A';
     String formattedCheckinDate = formatDate(checkinDate);
-    // Debug print to verify values
-    print('build: formattedCheckinDate: $formattedCheckinDate');
-    print('build: formattedCheckinTime: $formattedCheckinTime');
+    // // Debug print to verify values
+    // print('build: formattedCheckinDate: $formattedCheckinDate');
+    // print('build: formattedCheckinTime: $formattedCheckinTime');
 
     return Scaffold(
       appBar: AppBar(

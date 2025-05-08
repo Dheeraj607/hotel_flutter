@@ -41,7 +41,6 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
       if (response.statusCode == 200) {
         setState(() {
           roles = json.decode(response.body) ?? [];
-          // print('Roles fetched: $roles');
         });
       } else {
         throw Exception('Failed to load roles');
@@ -59,7 +58,6 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
       if (response.statusCode == 200) {
         setState(() {
           availableStaff = json.decode(response.body) ?? [];
-          print('Available staff fetched: $availableStaff');
           selectedStaff = null; // reset selected staff on role change
         });
       } else {
@@ -72,7 +70,12 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
 
   // Assign the selected staff to the selected role
   Future<void> assignStaffToRole() async {
-    if (selectedRole == null || selectedStaff == null) return;
+    if (selectedRole == null || selectedStaff == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select both a role and staff')),
+      );
+      return;
+    }
 
     final url = Uri.parse('$kBaseurl/api/maintenance-staff/');
     final body = json.encode({
@@ -147,7 +150,6 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
                 }
               },
             ),
-
             const SizedBox(height: 20),
 
             // Dropdown for selecting staff
@@ -164,9 +166,7 @@ class _AssignStaffPageState extends State<AssignStaffPage> {
                       ? availableStaff.map<DropdownMenuItem<dynamic>>((staff) {
                         return DropdownMenuItem(
                           value: staff,
-                          child: Text(
-                            staff['staffName'],
-                          ), // Ensure staffName exists
+                          child: Text(staff['staffName']),
                         );
                       }).toList()
                       : [

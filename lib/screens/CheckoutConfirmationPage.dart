@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_management/constant.dart';
+import 'package:hotel_management/screens/dashboard_screen.dart';
 import 'package:hotel_management/screens/room_detail_screen.dart';
 import 'package:hotel_management/screens/unpaidservice.dart';
 import 'package:http/http.dart' as http;
@@ -138,7 +139,7 @@ class _CheckoutConfirmationPageState extends State<CheckoutConfirmationPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Checkout successful. Checkout ID: $checkoutId'),
+          content: Text('Checkout successful.'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -146,7 +147,7 @@ class _CheckoutConfirmationPageState extends State<CheckoutConfirmationPage> {
 
       // 🎯 Now Navigate to RoomDetailsScreen
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => RoomDetailsScreen()),
+        MaterialPageRoute(builder: (context) => DashboardScreen(selectedIndex: 1)),
         (Route<dynamic> route) => false,
       );
     } else {

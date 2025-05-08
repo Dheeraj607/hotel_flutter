@@ -109,10 +109,8 @@ class RoomCard extends StatelessWidget {
     double Rent = double.tryParse(room['Rent'].toString()) ?? 0.0;
     double Advance = double.tryParse(room['Advance'].toString()) ?? 0.0;
 
-    // Image URL or placeholder
-    String imageUrl =
-        room['imageUrl']?.toString() ??
-        'https://images.unsplash.com/flagged/photo-1556438758-8d49568ce18e?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1080&fit=max&ixid=eyJhcHBfaWQiOjEyMDd9';
+    // String imageUrl = room['imageUrl']?.toString() ?? 'images/room.jpg';
+    // bool isNetwork = imageUrl.startsWith('http');
 
     return Card(
       elevation: 6,
@@ -137,26 +135,17 @@ class RoomCard extends StatelessWidget {
             children: [
               // Room Image
               ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  imageUrl,
-                  height: 200,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child: Image.asset(
+                  'images/room.jpg',
+                  height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        height: 200,
-                        color: Colors.grey.shade300,
-                        child: Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.grey.shade600,
-                            size: 50,
-                          ),
-                        ),
-                      ),
                 ),
               ),
+
               // Room Details
               Padding(
                 padding: EdgeInsets.all(16),
@@ -208,6 +197,9 @@ class RoomCard extends StatelessWidget {
                     if (isOccupied)
                       ElevatedButton.icon(
                         onPressed: () async {
+                          print(
+                            'checkinTime passed to ExtraServicesScreen: ${bookings[0]['checkInTime'].toString()}',
+                          );
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -227,8 +219,10 @@ class RoomCard extends StatelessWidget {
                                   ),
                             ),
                           );
+
                           onDataChanged();
                         },
+
                         icon: Icon(Icons.exit_to_app),
                         label: Text("Checkout"),
                         style: ElevatedButton.styleFrom(

@@ -5,14 +5,15 @@ import 'room_detail_screen.dart';
 import 'rooms.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final int selectedIndex;
 
+  const DashboardScreen({super.key, this.selectedIndex = 0});
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   // List of screen widgets for each tab
   final List<Widget> _screens = [
@@ -22,13 +23,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     SettingsPage(), // Settings
   ];
 
-  // App bar titles corresponding to each screen
-  final List<String> _titles = [
-    "Book a Room",
-    "Booked Rooms",
-    "All Rooms",
-    "Settings",
-  ];
+  // // App bar titles corresponding to each screen
+  // final List<String> _titles = [
+  //   "Book a Room",
+  //   "Booked Rooms",
+  //   "All Rooms",
+  //   "Settings",
+  // ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex =
+        widget
+            .selectedIndex; // Set the initial selected index based on the passed value
+  }
 
   // Handle bottom navigation tap
   void _onItemTapped(int index) {
@@ -40,7 +49,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      // appBar: AppBar(title: Text(_titles[_selectedIndex])),
+      body: _screens[_selectedIndex], // Display the selected screen
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -78,7 +88,18 @@ Widget _buildDashboardCard(
 ) {
   return GestureDetector(
     onTap: () {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
+      if (targetScreen is RoomDetailsScreen) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => targetScreen),
+          (Route<dynamic> route) => false, // Removes all previous screens
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => targetScreen),
+        );
+      }
     },
     child: Card(
       elevation: 4,

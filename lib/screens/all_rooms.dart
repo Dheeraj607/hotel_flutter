@@ -79,8 +79,8 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
     final isOccupied = status.toString().toLowerCase() == 'occupied';
 
     // Placeholder image URL (you can replace it with actual image asset or URL)
-    const String imageUrl =
-        "https://images.unsplash.com/flagged/photo-1556438758-8d49568ce18e?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1080&fit=max&ixid=eyJhcHBfaWQiOjEyMDd9";
+    // String imageUrl = room['imageUrl']?.toString() ?? 'images/room.jpg';
+    // bool isNetwork = imageUrl.startsWith('http');
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -92,21 +92,13 @@ class _AllRoomsScreenState extends State<AllRoomsScreen> {
           // Room Image
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              imageUrl,
+            child: Image.asset(
+              'images/room.jpg',
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder:
-                  (context, error, stackTrace) => Container(
-                    height: 180,
-                    color: Colors.grey.shade300,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image, size: 40),
-                  ),
             ),
           ),
-
           // Room Details
           Padding(
             padding: const EdgeInsets.all(16),
