@@ -4,12 +4,30 @@ import 'package:hotel_management/screens/all_customers.dart';
 import 'package:hotel_management/screens/maintenance_staff_allotment.dart';
 import 'package:hotel_management/screens/taxes_page.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // This will automatically open the drawer when screen loads
+  @override
+  void initState() {
+    super.initState();
+    // Delay by 300ms so drawer opens after build
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _scaffoldKey.currentState?.openDrawer();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey, // attach the scaffold key
       extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
@@ -22,10 +40,7 @@ class SettingsPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Center(
-            // child: Text(
-            //   'Settings Content (Add any details you want here)',
-            //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            // ),
+            // Add content here if needed
           ),
         ),
       ),
@@ -35,7 +50,6 @@ class SettingsPage extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: Column(
               children: [
-                // Directly start with ListView, no DrawerHeader
                 Expanded(
                   child: ListView(
                     children: [
@@ -74,7 +88,7 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // Helper method to create individual settings items
+  // Drawer item helper
   Widget _buildDrawerItem(
     BuildContext context,
     String title,
